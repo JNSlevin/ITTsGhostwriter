@@ -265,15 +265,10 @@ local function AddGuildRosterMenuEntry(control, button, upInside)
 end
 
 lib:RegisterGuildRosterContextMenu(AddGuildRosterMenuEntry, lib.CATEGORY_LATE)
---TODO: click for applications instead of guildListing (something with fragments)
+
 
 function GW.RosterRow()
-    -- local rosterNote = db.savednotes[worldName][id][playerName]
-    -- local GetGuildMemberIndexFromDisplayName(guildId, string displa
-    --[[     local guildId = {}
-    local index = {}
-    local me = GetPlayerGuildMemberIndex(guildId)
-    local playerName, _, _, _, _ = GetGuildMemberInfo(guildId, index) ]]
+   
     GW.myGuildColumn =
         LibGuildRoster:AddColumn(
         {
@@ -324,11 +319,10 @@ function BackupSpecificNote(guildId, playerName)
         db.savednotes[worldName][guildId][playerName] = note
         chat:Print("Saved note for |cffffff" .. playerLink .. "|r in " .. CreateGuildLink(guildId) .. "!")
 
-    -- chat:Print("test")
+    
     end
     LibGuildRoster:Refresh()
-    -- chat:Print("SUCCESS! Saved note for |cffffff" .. playerLink .. " in " .. CreateGuildLink(guildId))
-    -- chat:Print("SUCCESS! Saved note for |cffffff" .. playerLink .. " in " .. CreateGuildLink(guildId) .. "!")
+
 end
 
 function RetrieveSpecificNote(guildId, playerName)
@@ -351,9 +345,7 @@ function OnMemberJoin(_, guildId, playerName)
     local index = GetGuildMemberIndexFromDisplayName(guildId, playerName)
     local name, _, _, _, _ = GetGuildMemberInfo(guildId, index)
     local gIndex = GetGuildIndex(guildId)
-    -- local note = GetPermissionsFromMemberNote(guildId)
 
-    -- if GuildPermissions(guildId) == true then
     if GetChatMessagePermission(guildId) == true then
         if db.guilds[guildId].settings.messageEnabled == true then
             local template = zo_strformat(db.guilds[guildId].settings.messageBody)
@@ -410,11 +402,9 @@ function OnMemberJoin(_, guildId, playerName)
 
             if name == playerName then
                 writeMail(playerName, mb, ms)
-                --[[ RequestOpenMailbox()
-                SendMail(playerName, Sfformat, fm)
-                CloseMailbox() ]]
+   
                 chat:Print("Mail sent to: |cffffff" .. ZO_LinkHandler_CreateDisplayNameLink(playerName))
-            --ZO_LinkHandler_CreateDisplayNameLink(displayName)
+          
             end
         end
     end
@@ -473,32 +463,16 @@ function Ghostwriter.CreateSettingsWindow()
             name = "Guild Settings",
             icon = "/esoui/art/journal/gamepad/gp_questtypeicon_guild.dds",
             controls = {
-                --[[                 [1] = {
-                    type = "checkbox",
-                    name = "Guildwide Settings",
-                    default = false,
-                    disabled = false,
-                    tooltip = "Choose if you want to use the same setting for every guild you currently hold permissions in!",
-                    getFunc = function()
-                        return db.generalSettings.guildwideSettings
-                    end,
-                    setFunc = function(value)
-                        db.generalSettings.guildwideSettings = value
-                        -- DisableDropdown()
-                    end,
-                    width = "full" --or "full" (optional)
-                }, ]]
+
                 [1] = {
                     type = "description",
-                    --title = "My Title",	--(optional)
                     title = nil, --(optional)
                     text = "Here you can edit the settings for each guild! First choose the guild in the dropdown below, then edit the templates or turn settings on / off!\n\nThe current placeholders are: \n|c04B4AE%DATE%|r\t-\twill be replaced by the current date (in the format you chose below)!\n|c04B4AE%PLAYER%|r\t-\twill be replaced by the account name of the player!\n|c04B4AE%GUILD%|r\t-\twill be replaced by the guilds name!",
-                    width = "full" --or "half" (optional)
+                    width = "full"
                 },
                 [2] = {
                     type = "dropdown",
                     name = "Choose Guild",
-                    -- tooltip = "Dropdown's tooltip text.",
                     choices = guildTable,
                     choicesValues = guildTableValues,
                     choicesTooltips = guildTableValues,
@@ -514,7 +488,6 @@ function Ghostwriter.CreateSettingsWindow()
                 [3] = {
                     type = "dropdown",
                     name = "Choose date format",
-                    -- tooltip = "Dropdown's tooltip text.",
                     choices = dateTable,
                     choicesValues = dateValues,
                     choicesTooltips = dateTooltips,
@@ -546,8 +519,8 @@ function Ghostwriter.CreateSettingsWindow()
                 [5] = {
                     type = "texture",
                     image = "/esoui/art/guild/sectiondivider_left.ddss",
-                    imageWidth = 510, --max of 250 for half width, 510 for full
-                    imageHeight = 5 --max of 100
+                    imageWidth = 510, 
+                    imageHeight = 5
                 },
                 [6] = {
                     type = "checkbox",
@@ -765,23 +738,16 @@ end
 local function OnPlayerActivated()
     GetGuilds()
     LGRSetupGuilds()
-    GsubTesting()
-    d(os.date(db.generalSettings.dateFormat))
+    
 
     GW.myGuildColumn:SetGuildFilter(LGRGuilds)
-    -- d(type(ITTsDonationBot:CreateTooltipInfo(525912, "@JN_Slevin")))
-    -- FetchGuildInfo()
-    -- chat:Print("|H0:foo:bar:baz|h[Test]|h")
-    -- Ghostwriter.CreateSettingsWindow()
-    --[[     if not Ghoswriter.Vars.savednotes[worldName] then
-        db.savednotes[worldName] = {}
-    end ]]
+
 end
 
 -------------------
 ---Initialize Function
 ------------------
--- TODO: no clue something is odd there, the debug messages wont get printed so my SVs are not there?!
+
 function GW.Initialize()
     Ghostwriter.Vars = ZO_SavedVars:NewAccountWide("GWSettings", GW.variableVersion, nil, defaults, GetWorldName())
     db = Ghostwriter.Vars
