@@ -17,7 +17,7 @@ Ghostwriter is a permission based addon, as such if you first install it without
 This was done to prevent accidental spamming of new members (if 27 people in a guild have this addon and have the welcome mail enabled the newcomer might get 27 mails). 
     
 Ghostwriter will search the notes of guildmembers for its permission pattern. 
-The notes being one of the only 3 ways to exchange information in real time with other members (the other 2 being the MotD and about-us). 
+The notes being one of the only 3 ways to exchange information in real time with other members and their addons (the other 2 being the MotD and about-us). 
 So theoretically people who can change their notes could change the permissions. 
 If you do not want that, change the guildpermissions for editing notes!
 
