@@ -65,22 +65,31 @@ These settings include:
     * This will overwrite older notes rather fast, so retrieving specific notes will be harder.
 
 ### Miscellaneous features
+
 Basically as i have written this addon i had a bunch of ideas which i thought would be helpful
+
+
 #### GuildLinks
 Any of the system messages which include a specific guild will have a link for that guild in them, these links include:
-    * The name of the guild
-    * The color you chose in the vanilla settings for each guild
-    * clicking the link will result in:
-        - Leftclick = opening the guild home
-        - Rightlick = 
-        - Middleclick (the mousewheel) = opening the applications window
+* The name of the guild
+* The color you chose in the vanilla settings for each guild
+* clicking the link will result in:
+   - Leftclick = opening the guild home
+   - Rightlick = 
+    - Middleclick (the mousewheel) = opening the applications window
+        
+        
 #### Alerts
+
 Will post a message in your system chat when:
-    * A note is changed
-    * A new application arrives 
-        - will include the number of applications + how many are empty + how many are above in the threshhold you set in the settings
-    * A mail was sent or was not sent.
+* A note is changed
+* A new application arrives 
+   - will include the number of applications + how many are empty + how many are above in the threshhold you set in the settings
+* A mail was sent or was not sent.
+    
+    
 #### Context Menus
+
 Added context menus in:
    * The guildroster to:
         - Backup the note 
