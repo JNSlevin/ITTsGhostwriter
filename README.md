@@ -30,7 +30,7 @@ After you decided who does what, edit their notes! The pattern is specifically m
 *  CHAT PATTERN =          `|cCWchat|r`
 *  NOTE + MAIL PATTERN =   `|cGWnoma|r`
 *  NOTE + CHAT PATTERN =   `|cGWnoch|r`
-*  MAIL + CHAT PATTERN ="  `|cGWmach|r`
+*  MAIL + CHAT PATTERN =   `|cGWmach|r`
 *  PATTERN FOR ALL =       `|cGWxxxx|r`
     
 
