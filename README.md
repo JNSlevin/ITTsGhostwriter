@@ -56,10 +56,36 @@ These settings include:
   - Set the template
 - Enable the Mail
   - Set both templates
-#### Backup options
+##### Backup options
 - Backup the notes in the currently selected guilds
 - Automatically backup notes upon 
   * Login
   * Reload UI
   * When a note gets changed
     * This will overwrite older notes rather fast, so retrieving specific notes will be harder.
+
+### Miscellaneous features
+Basically as i have written this addon i had a bunch of ideas which i thought would be helpful
+#### GuildLinks
+Any of the system messages which include a specific guild will have a link for that guild in them, these links include:
+    * The name of the guild
+    * The color you chose in the vanilla settings for each guild
+    * clicking the link will result in:
+        - Leftclick = opening the guild home
+        - Rightlick = 
+        - Middleclick (the mousewheel) = opening the applications window
+#### Alerts
+Will post a message in your system chat when:
+    * A note is changed
+    * A new application arrives 
+        - will include the number of applications + how many are empty + how many are above in the threshhold you set in the settings
+    * A mail was sent or was not sent.
+#### Context Menus
+Added context menus in:
+   * The guildroster to:
+        - Backup the note 
+        - retrieve the note in storage
+        - initiate welcome sequence (The steps you have set when a new member has joined)
+   * The playerlink:
+        - Invites to all the guilds you have permission to invite for
+    
