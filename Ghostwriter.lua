@@ -1,28 +1,61 @@
-local LAM = LibAddonMenu2
-local lib = LibCustomMenu
-local chat = LibChatMessage("Ghostwriter", "GW") -- long and short tag to identify who is printing the message
-local chat = chat:SetTagColor("04B4AE")
 Ghostwriter = {}
 local GW = {
     name = "Ghostwriter",
     version = 0.1,
-    variableVersion = 167
+    variableVersion = 184
 }
+--------
+--Libs--
+--------
+local LAM = LibAddonMenu2
+local lib = LibCustomMenu
+local chat = LibChatMessage("Ghostwriter", "GW") -- long and short tag to identify who is printing the message
+local chat = chat:SetTagColor("04B4AE")
+-------------
+-- Defaults--
+-------------
+local defaults = {
+    generalSettings = {
+        offlinecheck = true,
+        offlinemodecheck = true
+    },
+    guilds = {},
+    savednotes = {},
+    firstload = true,
+    selectedGuild = GetGuildId(1)
+}
+
+-------------
+--Variables--
+-------------
+
+local guildName = GetGuildName()
+local guildIds = {}
+local settingsTable = {}
+local worldName = GetWorldName()
 local db = {}
-local guildSettings = {}
 local id = {}
-local guildId = {}
 local guildTable = {}
 local guildTableValues = {}
-local date = {}
-local dateTable = {"DD.MM.YY", "DD.MM.YYYY", "MM/DD/YY", "MM/DD/YYYY", "YY-MM-DD", "YYYY-MM-DD"}
+local dateTable = {
+    "DD.MM.YY",
+    "DD.MM.YYYY",
+    "MM/DD/YY",
+    "MM/DD/YYYY",
+    "YY-MM-DD",
+    "YYYY-MM-DD",
+    "DD-MM-YY",
+    "DD-MM-YYYY"
+}
 local dateValues = {
     "%d.%m.%y",
     "%d.%m.%Y",
     "%m/%d/%y",
     "%m/%d/%Y",
     "%y-%m-%d",
-    "%Y-%m-%d"
+    "%Y-%m-%d",
+    "%d-%m-%y",
+    "%d-%m-%Y"
 }
 local dateTooltips = {
     "31.03.21",
@@ -30,37 +63,22 @@ local dateTooltips = {
     "03/31/21",
     "03/31/2021",
     "21-31-03",
-    "2021-31-03"
+    "2021-31-03",
+    "31-03-21",
+    "31-03-2021"
 }
-local defaults = {
-    generalSettings = {
-        alerts = true,
-        autobackup = false,
-        guildwideSettings = false,
-        dateFormat = "%d.%m.%y"
-    },
-    guilds = {},
-    savednotes = {}
-}
-
------------
---Variables
------------
-
-local guildName = GetGuildName()
-local guildIds = {}
-local settingsTable = {}
-local worldName = GetWorldName()
-
+-----------------
+--OnAddonLoaded--
+-----------------
 function Ghostwriter.OnAddOnLoaded(event, addonName)
     if addonName ~= GW.name then
         return
     end
     GW.Initialize()
 end
----------
---Methods
----------
+-----------
+--Methods--
+-----------
 
 function BackupNotes(guildId)
     -- local numGuilds = GetNumGuilds()
@@ -88,12 +106,8 @@ function BackupNotes(guildId)
         end
         chat:Print("Notebackup for " .. CreateGuildLink(guildId) .. " successful!")
     end
-    -- else chat:Print("You currently do not have Ghostwriter noting permissions for " .. link)
-
-    -- chat:Print("Please |cffffff/reloadui|r to save the notes in your Saved Variables")
     LibGuildRoster:Refresh()
 end
-SLASH_COMMANDS["/backupnotes"] = BackupNotes
 
 local function GetGuilds()
     local numGuilds = GetNumGuilds()
@@ -108,17 +122,19 @@ local function GetGuilds()
         local gIndex = GetGuildIndex(id)
         local link = CreateGuildLink(id)
         local guildDefaults = {
-            ["messageBody"] = "message",
-            ["mailBody"] = "mailbody",
-            ["mailEnabled"] = true,
-            ["mailSubject"] = "mailsubject",
+            ["messageBody"] = "Welcome to %PLAYER% to %GUILD% do we get cake?",
+            ["mailBody"] = "I am very happy to welcome you to my guild %PLAYER%\n cakes are to be depositet in our guildbank <3",
+            ["mailEnabled"] = false,
+            ["mailSubject"] = "Welcome to %GUILD%",
             ["messageEnabled"] = true,
             ["noteEnabled"] = false,
-            ["noteBody"] = "notebody",
+            ["noteBody"] = "%DATE%\n%PLAYER%\nhas brought cake",
             ["autobackup"] = false,
             ["alerts"] = true,
             ["dateFormat"] = "%d.%m.%y",
-            ["applicationThreshhold"] = 300
+            ["applicationThreshhold"] = 300,
+            ["noteAlert"] = true,
+            ["applicationAlert"] = true
         }
 
         -- d("2")
@@ -144,29 +160,123 @@ local function GetGuilds()
         end
 
         db.guilds[id].id = id
-        if GetNotingPermission(id) == true or GetMailingPermission(id) == true or GetChatMessagePermission(id) == true then
-            guildTable[i] = link
-            guildTableValues[i] = id
-        end
+        -- if GetNotingPermission(id) == true or GetMailingPermission(id) == true or GetChatMessagePermission(id) == true then
+
+        guildTable[i] = link
+        guildTableValues[i] = id
+
         for l = 1, numMembers do
             local playerName, note, rankIndex, _, _ = GetGuildMemberInfo(id, l)
             -- d("3")
             if rankIndex >= 3 and db.generalSettings.autobackup == true then
                 db.savednotes[worldName][id][playerName] = note
             end
-            if rankIndex == 1 then
-                chat:Print("|cffffff " .. ZO_LinkHandler_CreateDisplayNameLink(playerName))
+        end
+    end
+end
+local function OnMemberJoin(_, guildId, playerName)
+    local guildName = GetGuildName(guildId)
+    local guilds = db.guilds[guildId]
+    local date = os.date(db.generalSettings.dateFormat)
+    local index = GetGuildMemberIndexFromDisplayName(guildId, playerName)
+    local name, _, _, status, offlinetime = GetGuildMemberInfo(guildId, index)
+    local gIndex = GetGuildIndex(guildId)
+    -- local note = GetPermissionsFromMemberNote(guildId)
+
+    -- if GuildPermissions(guildId) == true then
+    if GetChatMessagePermission(guildId) == true then
+        if db.guilds[guildId].settings.messageEnabled == true then
+            local template = zo_strformat(db.guilds[guildId].settings.messageBody)
+            -- local template = "test"
+            if not template or template == "" then
+                return
+            end
+
+            local formattedMessage = string.gsub(template, "%%PLAYER%%", playerName)
+            local eformat = string.gsub(formattedMessage, "%%GUILD%%", guildName)
+            local fformat = string.gsub(eformat, "%%DATE%%", date)
+
+            if index ~= nil then
+                if db.generalSettings.offlinecheck == false then
+                    StartChatInput(fformat, _G["CHAT_CHANNEL_GUILD_" .. gIndex])
+                end
+                if db.guilds[guildId].settings.offlinecheck == true then
+                    if status ~= PLAYER_STATUS_OFFLINE then
+                        StartChatInput(fformat, _G["CHAT_CHANNEL_GUILD_" .. gIndex])
+                    end
+                end
             end
         end
-        chat:Print("GuildSetup " .. id .. " " .. CreateGuildLink(id) .. " GuildIndex is: |cffffff" .. gIndex)
+    end
+    if GetNotingPermission(guildId) == true then
+        if db.guilds[guildId].settings.noteEnabled == true then
+            if db.savednotes[worldName][guildId][playerName] == nil or db.savednotes[worldName][guildId][playerName] == "" then
+                local membernote = zo_strformat(db.guilds[guildId].settings.noteBody)
+                if not membernote or membernote == "" then
+                    return
+                end
+
+                local fm = string.gsub(membernote, "%%PLAYER%%", playerName)
+                local fm = string.gsub(fm, "%%GUILD%%", guildName)
+                local fm = string.gsub(fm, "%%DATE%%", date)
+                if db.generalSettings.offlinemodecheck == true then
+                    if offlinetime > 1209600 then
+                        fm = (fm .. "\n" .. "|cffffffOfflinemode|r")
+                    end
+                end
+                if name == playerName then
+                    SetGuildMemberNote(guildId, index, fm)
+                end
+            else
+                if name == playerName then
+                    SetGuildMemberNote(guildId, index, db.savednotes[worldName][guildId][playerName])
+                end
+            end
+        end
+    end
+    if GetMailingPermission(guildId) == true then
+        if db.guilds[guildId].settings.mailEnabled == true then
+            local mailBody = zo_strformat(db.guilds[guildId].settings.mailBody)
+            local mailSubject = zo_strformat(db.guilds[guildId].settings.mailSubject)
+            if not mailBody or mailBody == "" then
+                return
+            end
+
+            local mb = string.gsub(mailBody, "%%PLAYER%%", playerName)
+            local mb = string.gsub(mb, "%%GUILD%%", guildName)
+            local mb = string.gsub(mb, "%%DATE%%", date)
+            local ms = string.gsub(mailSubject, "%%PLAYER%%", playerName)
+            local ms = string.gsub(ms, "%%GUILD%%", guildName)
+            local ms = string.gsub(ms, "%%DATE%%", date)
+
+            if name == playerName then
+                writeMail(playerName, mb, ms)
+                --[[ RequestOpenMailbox()
+                SendMail(playerName, Sfformat, fm)
+                CloseMailbox() ]]
+                chat:Print("Mail sent to: |cffffff" .. ZO_LinkHandler_CreateDisplayNameLink(playerName))
+            --ZO_LinkHandler_CreateDisplayNameLink(displayName)
+            end
+        end
     end
 end
 
-function DisableDropdown()
-    return db.generalSettings.guildwideSettings
+local function firstLoad()
+    if db.firstload == true then
+        chat:Print(
+            "Thank you for downloading Ghostwriter. Please visit the website https://github.com/JNSlevin/ITTs-Ghostwriter for setup help! You will need to setup first to make the addon useable"
+        )
+        db.firstload = false
+    end
 end
---!DONE
 
+function NoteTest()
+    writeNote(525912, 104, math.random(12, 9999))
+end
+SLASH_COMMANDS["/xxx"] = NoteTest
+------------------
+---LibCustomMenu--
+------------------
 local function AddPlayerContextMenuEntry(playerName, rawName)
     numGuilds = GetNumGuilds()
 
@@ -182,16 +292,6 @@ local function AddPlayerContextMenuEntry(playerName, rawName)
 
         local guildName = GetGuildName(guildId)
 
-        --[[             AddMenuItem(
-                "Invite to: ",
-                function()
-                    CHAT_ROUTER:AddDebugMessage("my Func")
-                end,
-                _,
-                _,
-                _,
-                ZO_ColorDef:New(0.015, 0.70, 0.68, 1)
-            ) ]]
         contextEntries[i] = {
             label = link,
             callback = function()
@@ -265,10 +365,48 @@ local function AddGuildRosterMenuEntry(control, button, upInside)
 end
 
 lib:RegisterGuildRosterContextMenu(AddGuildRosterMenuEntry, lib.CATEGORY_LATE)
+function BackupSpecificNote(guildId, playerName)
+    local playerLink = ZO_LinkHandler_CreateDisplayNameLink(playerName)
+    local memberIndex = GetGuildMemberIndexFromDisplayName(guildId, playerName)
+    local name, note, rankIndex = GetGuildMemberInfo(guildId, memberIndex)
+    if rankIndex <= 3 then
+        -- elseif playerName ~= name or name == nil then
+        chat:Print("Membernote for: |cffffff" .. playerLink .. "|r cannot be backupped")
+    elseif note == db.savednotes[worldName][guildId][playerName] then
+        chat:Print("Note for |cffffff" .. playerLink .. "|r in " .. CreateGuildLink(guildId) .. " is already saved!")
+    elseif db.savednotes[worldName][guildId][playerName] ~= note or db.savednotes[worldName][guildId][playerName] == nil then
+        db.savednotes[worldName][guildId][playerName] = note
+        chat:Print("Saved note for |cffffff" .. playerLink .. "|r in " .. CreateGuildLink(guildId) .. "!")
 
+    -- chat:Print("test")
+    end
+    LibGuildRoster:Refresh()
+    -- chat:Print("SUCCESS! Saved note for |cffffff" .. playerLink .. " in " .. CreateGuildLink(guildId))
+    -- chat:Print("SUCCESS! Saved note for |cffffff" .. playerLink .. " in " .. CreateGuildLink(guildId) .. "!")
+end
 
+function RetrieveSpecificNote(guildId, playerName)
+    local playerLink = ZO_LinkHandler_CreateDisplayNameLink(playerName)
+    local memberIndex = GetGuildMemberIndexFromDisplayName(guildId, playerName)
+    local name, note, rankIndex = GetGuildMemberInfo(guildId, memberIndex)
+    if rankIndex <= 3 then
+        chat:Print("Membernote for: |cffffff" .. playerLink .. "|r in: " .. CreateGuildLink(guildId) .. "cannot be retrieved (Rank too high)")
+    elseif note == db.savednotes[worldName][guildId][playerName] then
+        chat:Print("Membernote in backup for: |cffffff" .. playerLink .. "|r in " .. CreateGuildLink(guildId) .. "is the same as the current note")
+    else
+        SetGuildMemberNote(guildId, memberIndex, db.savednotes[worldName][guildId][playerName])
+    end
+end
+------------------
+--LibGuildRoster--
+------------------
 function GW.RosterRow()
-   
+    -- local rosterNote = db.savednotes[worldName][id][playerName]
+    -- local GetGuildMemberIndexFromDisplayName(guildId, string displa
+    --[[     local guildId = {}
+    local index = {}
+    local me = GetPlayerGuildMemberIndex(guildId)
+    local playerName, _, _, _, _ = GetGuildMemberInfo(guildId, index) ]]
     GW.myGuildColumn =
         LibGuildRoster:AddColumn(
         {
@@ -306,149 +444,28 @@ function GW.RosterRow()
         }
     )
 end
-function BackupSpecificNote(guildId, playerName)
-    local playerLink = ZO_LinkHandler_CreateDisplayNameLink(playerName)
-    local memberIndex = GetGuildMemberIndexFromDisplayName(guildId, playerName)
-    local name, note, rankIndex = GetGuildMemberInfo(guildId, memberIndex)
-    if rankIndex <= 3 then
-        -- elseif playerName ~= name or name == nil then
-        chat:Print("Membernote for: |cffffff" .. playerLink .. "|r cannot be backupped")
-    elseif note == db.savednotes[worldName][guildId][playerName] then
-        chat:Print("Note for |cffffff" .. playerLink .. "|r in " .. CreateGuildLink(guildId) .. " is already saved!")
-    elseif db.savednotes[worldName][guildId][playerName] ~= note or db.savednotes[worldName][guildId][playerName] == nil then
-        db.savednotes[worldName][guildId][playerName] = note
-        chat:Print("Saved note for |cffffff" .. playerLink .. "|r in " .. CreateGuildLink(guildId) .. "!")
 
-    
-    end
-    LibGuildRoster:Refresh()
-
-end
-
-function RetrieveSpecificNote(guildId, playerName)
-    local playerLink = ZO_LinkHandler_CreateDisplayNameLink(playerName)
-    local memberIndex = GetGuildMemberIndexFromDisplayName(guildId, playerName)
-    local name, note, rankIndex = GetGuildMemberInfo(guildId, memberIndex)
-    if rankIndex <= 3 then
-        chat:Print("Membernote for: |cffffff" .. playerLink .. "|r in: " .. CreateGuildLink(guildId) .. "cannot be retrieved (Rank too high)")
-    elseif note == db.savednotes[worldName][guildId][playerName] then
-        chat:Print("Membernote in backup for: |cffffff" .. playerLink .. "|r in " .. CreateGuildLink(guildId) .. "is the same as the current note")
-    else
-        SetGuildMemberNote(guildId, memberIndex, db.savednotes[worldName][guildId][playerName])
-    end
-end
-
-function OnMemberJoin(_, guildId, playerName)
-    local guildName = GetGuildName(guildId)
-    local guilds = db.guilds[guildId]
-    local date = os.date(db.generalSettings.dateFormat)
-    local index = GetGuildMemberIndexFromDisplayName(guildId, playerName)
-    local name, _, _, _, _ = GetGuildMemberInfo(guildId, index)
-    local gIndex = GetGuildIndex(guildId)
-
-    if GetChatMessagePermission(guildId) == true then
-        if db.guilds[guildId].settings.messageEnabled == true then
-            local template = zo_strformat(db.guilds[guildId].settings.messageBody)
-            -- local template = "test"
-            if not template or template == "" then
-                return
-            end
-
-            local formattedMessage = string.gsub(template, "%%PLAYER%%", playerName)
-            local eformat = string.gsub(formattedMessage, "%%GUILD%%", guildName)
-            local fformat = string.gsub(eformat, "%%DATE%%", date)
-
-            if index ~= nil then
-                StartChatInput(fformat, _G["CHAT_CHANNEL_GUILD_" .. gIndex])
-            end
-        end
-    end
-    if GetNotingPermission(guildId) == true then
-        if db.guilds[guildId].settings.noteEnabled == true then
-            if db.savednotes[worldName][guildId][playerName] == nil or db.savednotes[worldName][guildId][playerName] == "" then
-                local membernote = zo_strformat(db.guilds[guildId].settings.noteBody)
-                if not membernote or membernote == "" then
-                    return
-                end
-
-                local fm = string.gsub(membernote, "%%PLAYER%%", playerName)
-                local fm = string.gsub(fm, "%%GUILD%%", guildName)
-                local fm = string.gsub(fm, "%%DATE%%", date)
-
-                if name == playerName then
-                    SetGuildMemberNote(guildId, index, fm)
-                end
-            else
-                if name == playerName then
-                    SetGuildMemberNote(guildId, index, db.savednotes[worldName][guildId][playerName])
-                end
-            end
-        end
-    end
-    if GetMailingPermission(guildId) == true then
-        if db.guilds[guildId].settings.mailEnabled == true then
-            local mailBody = zo_strformat(db.guilds[guildId].settings.mailBody)
-            local mailSubject = zo_strformat(db.guilds[guildId].settings.mailSubject)
-            if not mailBody or mailBody == "" then
-                return
-            end
-
-            local mb = string.gsub(mailBody, "%%PLAYER%%", playerName)
-            local mb = string.gsub(mb, "%%GUILD%%", guildName)
-            local mb = string.gsub(mb, "%%DATE%%", date)
-            local ms = string.gsub(mailSubject, "%%PLAYER%%", playerName)
-            local ms = string.gsub(ms, "%%GUILD%%", guildName)
-            local ms = string.gsub(ms, "%%DATE%%", date)
-
-            if name == playerName then
-                writeMail(playerName, mb, ms)
-   
-                chat:Print("Mail sent to: |cffffff" .. ZO_LinkHandler_CreateDisplayNameLink(playerName))
-          
-            end
-        end
-    end
-end
----testing
-
-function GsubTesting()
-    text =
-        [[. Transmutestation, all Crafting Stations, some Mundusstones and Target Dummies to use.
-
-    <GH
-    
-    |cA9E2F3Elite Trader|r x26
-    |c3EAED0Diamond Trader|r x9
-    |c4997D0God of Sales|r x3
-    |c50C878Emerald Trader|r x11
-    |cGWxxxx|r]]
-
-    newtext = string.gsub(text, "|cGW(.-)|r", "|cGWnote|r")
-
-    chat:Print(newtext)
-    SetGuildMemberNote(525912, 104, newtext)
-end
---------------
---LAM Settings
---------------
+----------------
+--LAM Settings--
+----------------
 
 -- TODO: change one saves for all of them?
 --! its all fucked ¯\_(ツ)_/¯
 --*update not fucked anymore thank you siri :D
 function Ghostwriter.CreateSettingsWindow()
     id = {}
-    numid = {}
     local text = {}
     local selectedGuildId = guildTableValues[1]
     local selectedDateFormat = dateValues[1]
     local color = GetGuildColor(1)
     local panelData = {
         type = "panel",
-        name = "|c04B4AEGhostwriter",
+        name = "ITTs |c04B4AEGhostwriter",
         author = "JN Slevin",
         version = GW.version,
         registerForRefresh = true,
-        registerForDefaults = false
+        registerForDefaults = false,
+        website = "https://github.com/JNSlevin/ITTs-Ghostwriter"
     }
 
     LAM:RegisterAddonPanel("GhostwriterOptions", panelData)
@@ -459,47 +476,115 @@ function Ghostwriter.CreateSettingsWindow()
             name = "|c04B4AEGhostwriter|r Settings"
         },
         [2] = {
+            type = "description",
+            title = "Setup |c04B4AEGhostwriter|r",
+            text = "Please visit the Website (linked in the " ..
+                ZO_LinkHandler_CreateURLLink("https://www.esoui.com", "help") ..
+                    " description above) for setup help. \n\n|cff0000The addon will not work and all guildspecific settings will be disabled without setup!",
+            enableLinks = true,
+            helpUrl = "https://www.esoui.com",
+            width = "full" --or "half" (optional)
+        },
+        [3] = {
+            type = "checkbox",
+            name = "Check for Onlinestatus",
+            default = false,
+            disabled = false,
+            width = "half",
+            tooltip = "Will not paste the chatmessage if the invited member is offline",
+            getFunc = function()
+                return db.generalSettings.offlinecheck
+            end,
+            setFunc = function(value)
+                db.generalSettings.offlinecheck = value
+            end,
+            d
+        },
+        [4] = {
+            type = "checkbox",
+            name = "Include Offlinemode check",
+            default = false,
+            disabled = false,
+            width = "half",
+            tooltip = "Will include the term |cffffffOfflinemode|r in the note if the member is offline for longer than 2 weeks",
+            getFunc = function()
+                return db.generalSettings.offlinemodecheck
+            end,
+            setFunc = function(value)
+                db.generalSettings.offlinemodecheck = value
+            end,
+            d
+        },
+        [5] = {
             type = "submenu",
             name = "Guild Settings",
             icon = "/esoui/art/journal/gamepad/gp_questtypeicon_guild.dds",
             controls = {
-
+                --[[                 [1] = {
+                    type = "checkbox",
+                    name = "Guildwide Settings",
+                    default = false,
+                    disabled = false,
+                    tooltip = "Choose if you want to use the same setting for every guild you currently hold permissions in!",
+                    getFunc = function()
+                        return db.generalSettings.guildwideSettings
+                    end,
+                    setFunc = function(value)
+                        db.generalSettings.guildwideSettings = value
+                        -- DisableDropdown()
+                    end,
+                    width = "full" --or "full" (optional)
+                }, ]]
                 [1] = {
                     type = "description",
+                    --title = "My Title",	--(optional)
                     title = nil, --(optional)
                     text = "Here you can edit the settings for each guild! First choose the guild in the dropdown below, then edit the templates or turn settings on / off!\n\nThe current placeholders are: \n|c04B4AE%DATE%|r\t-\twill be replaced by the current date (in the format you chose below)!\n|c04B4AE%PLAYER%|r\t-\twill be replaced by the account name of the player!\n|c04B4AE%GUILD%|r\t-\twill be replaced by the guilds name!",
-                    width = "full"
+                    width = "full" --or "half" (optional)
                 },
                 [2] = {
                     type = "dropdown",
                     name = "Choose Guild",
+                    tooltip = "Choose the guild you'd like to change the settings for. (if you do not have the Ghostwriter permissions in a guild every setting will be disabled)",
                     choices = guildTable,
                     choicesValues = guildTableValues,
                     choicesTooltips = guildTableValues,
                     disabled = false,
                     getFunc = function()
-                        return selectedGuildId
+                        return db.selectedGuild
                     end,
                     setFunc = function(guildId)
                         selectedGuildId = guildId
+                        db.selectedGuild = guildId
                     end,
                     width = "full"
                 },
                 [3] = {
                     type = "dropdown",
                     name = "Choose date format",
+                    tooltip = "Choose format of the date for the placeholder",
                     choices = dateTable,
+                    disabled = function()
+                        if
+                            GetNotingPermission(db.selectedGuild) == true or GetMailingPermission(db.selectedGuild) == true or
+                                GetChatMessagePermission(db.selectedGuild) == true
+                         then
+                            return false
+                        else
+                            return true
+                        end
+                    end,
                     choicesValues = dateValues,
                     choicesTooltips = dateTooltips,
                     getFunc = function()
-                        return db.guilds[selectedGuildId].settings.dateFormat
+                        return db.guilds[db.selectedGuild].settings.dateFormat
                     end,
                     setFunc = function(dateFormat)
-                        db.guilds[selectedGuildId].settings.dateFormat = dateFormat
+                        db.guilds[db.selectedGuild].settings.dateFormat = dateFormat
                     end,
                     width = "full"
                 },
-                [4] = {
+                --[[                 [4] = {
                     type = "editbox",
                     name = "Application Threshhold",
                     tooltip = "Choose what your threshhold of champion points for applicants is",
@@ -515,120 +600,237 @@ function Ghostwriter.CreateSettingsWindow()
                     setFunc = function(text)
                         db.guilds[selectedGuildId].settings.applicationThreshhold = text
                     end
+                }, ]]
+                [4] = {
+                    type = "checkbox",
+                    name = "Note alerts",
+                    default = false,
+                    disabled = function()
+                        if DoesPlayerHaveGuildPermission(db.selectedGuild, GUILD_PERMISSION_NOTE_EDIT) == true then
+                            return false
+                        else
+                            return true
+                        end
+                    end,
+                    width = "full",
+                    tooltip = "Will announce in the system chat if notes got changed in your guild (needs permission to edit notes)",
+                    getFunc = function()
+                        return db.guilds[db.selectedGuild].settings.noteAlert
+                    end,
+                    setFunc = function(value)
+                        db.guilds[db.selectedGuild].settings.noteAlert = value
+                    end
                 },
                 [5] = {
-                    type = "texture",
-                    image = "/esoui/art/guild/sectiondivider_left.ddss",
-                    imageWidth = 510, 
-                    imageHeight = 5
+                    type = "checkbox",
+                    name = "Application alerts",
+                    default = false,
+                    disabled = function()
+                        if DoesPlayerHaveGuildPermission(db.selectedGuild, GUILD_PERMISSION_MANAGE_APPLICATIONS) == true then
+                            return false
+                        else
+                            return true
+                        end
+                    end,
+                    width = "half",
+                    tooltip = "Will announce in the system chat if new applications are open in your guild (needs permission to manage applications)!",
+                    getFunc = function()
+                        return db.guilds[db.selectedGuild].settings.applicationAlert
+                    end,
+                    setFunc = function(value)
+                        db.guilds[db.selectedGuild].settings.applicationAlert = value
+                    end
                 },
                 [6] = {
+                    type = "slider",
+                    name = "Application Threshhold",
+                    tooltip = "Set the minimum amount of CP for new applications to be shown in the system chat if a new application arrives.",
+                    getFunc = function()
+                        return db.guilds[db.selectedGuild].settings.applicationThreshhold
+                    end,
+                    setFunc = function(number)
+                        db.guilds[db.selectedGuild].settings.applicationThreshhold = number
+                    end,
+                    width = "half",
+                    disabled = function()
+                        if
+                            GetNotingPermission(db.selectedGuild) == true or GetMailingPermission(db.selectedGuild) == true or
+                                GetChatMessagePermission(db.selectedGuild) == true
+                         then
+                            return false
+                        else
+                            return true
+                        end
+                    end,
+                    min = 0,
+                    max = 3600,
+                    step = 50
+                },
+                [7] = {
+                    type = "texture",
+                    image = "/esoui/art/guild/sectiondivider_left.ddss",
+                    imageWidth = 510, --max of 250 for half width, 510 for full
+                    imageHeight = 5 --max of 100
+                },
+                [8] = {
                     type = "checkbox",
                     name = "Message Enabled",
                     default = false,
-                    disabled = false,
+                    disabled = function()
+                        if GetChatMessagePermission(db.selectedGuild) == true then
+                            return false
+                        else
+                            return true
+                        end
+                    end,
                     width = "half",
                     tooltip = "Will paste the below template in you chat for new members of you guild!",
                     getFunc = function()
-                        return db.guilds[selectedGuildId].settings.messageEnabled
+                        return db.guilds[db.selectedGuild].settings.messageEnabled
                     end,
                     setFunc = function(value)
-                        db.guilds[selectedGuildId].settings.messageEnabled = value
+                        db.guilds[db.selectedGuild].settings.messageEnabled = value
                     end,
                     d
                 },
-                [7] = {
+                [9] = {
                     type = "checkbox",
                     name = "Note Enabled",
                     default = false,
-                    disabled = false,
+                    disabled = function()
+                        if
+                            GetNotingPermission(db.selectedGuild) == true or GetMailingPermission(db.selectedGuild) == true or
+                                GetChatMessagePermission(db.selectedGuild) == true
+                         then
+                            return false
+                        else
+                            return true
+                        end
+                    end,
                     width = "half",
                     tooltip = "Will set a note for the new player!",
                     getFunc = function()
-                        return db.guilds[selectedGuildId].settings.noteEnabled
+                        return db.guilds[db.selectedGuild].settings.noteEnabled
                     end,
                     setFunc = function(value)
-                        db.guilds[selectedGuildId].settings.noteEnabled = value
+                        db.guilds[db.selectedGuild].settings.noteEnabled = value
                     end
                 },
-                [8] = {
+                [10] = {
                     type = "editbox",
                     name = "ChatMessage",
                     tooltip = "This message will be pasted in your chat!",
                     isExtraWide = true,
                     isMultiline = true,
-                    disabled = false,
+                    disabled = function()
+                        if GetChatMessagePermission(db.selectedGuild) == true then
+                            return false
+                        else
+                            return true
+                        end
+                    end,
                     width = "half",
                     getFunc = function()
-                        return db.guilds[selectedGuildId].settings.messageBody
+                        return db.guilds[db.selectedGuild].settings.messageBody
                     end,
                     setFunc = function(text)
-                        db.guilds[selectedGuildId].settings.messageBody = text
+                        db.guilds[db.selectedGuild].settings.messageBody = text
                     end
                 },
-                [9] = {
+                [11] = {
                     type = "editbox",
                     name = "Note Template",
                     tooltip = "This is the note you will set once a new member joins",
                     width = "half",
                     isExtraWide = true,
                     isMultiline = true,
-                    disabled = false,
+                    disabled = function()
+                        if GetNotingPermission(db.selectedGuild) == true then
+                            return false
+                        else
+                            return true
+                        end
+                    end,
                     maxChars = 256,
                     getFunc = function()
-                        return db.guilds[selectedGuildId].settings.noteBody
+                        return db.guilds[db.selectedGuild].settings.noteBody
                     end,
                     setFunc = function(text)
-                        db.guilds[selectedGuildId].settings.noteBody = text
+                        db.guilds[db.selectedGuild].settings.noteBody = text
                     end
                 },
-                [10] = {
+                [12] = {
                     type = "checkbox",
                     name = "Mail Enabled",
                     default = false,
-                    disabled = false,
+                    disabled = function()
+                        if GetMailingPermission(db.selectedGuild) == true then
+                            return false
+                        else
+                            return true
+                        end
+                    end,
                     width = "full",
                     tooltip = "Will send the below mail to the new member of your guild!",
                     getFunc = function()
-                        return db.guilds[selectedGuildId].settings.mailEnabled
+                        return db.guilds[db.selectedGuild].settings.mailEnabled
                     end,
                     setFunc = function(value)
-                        db.guilds[selectedGuildId].settings.mailEnabled = value
+                        db.guilds[db.selectedGuild].settings.mailEnabled = value
                     end
                 },
-                [11] = {
+                [13] = {
                     type = "editbox",
                     name = "MailSubject",
                     tooltip = "This is the subject of the mail",
                     isExtraWide = true,
                     isMultiline = false,
                     maxChars = MAIL_MAX_SUBJECT_CHARACTERS,
-                    disabled = false,
+                    disabled = function()
+                        if GetMailingPermission(db.selectedGuild) == true then
+                            return false
+                        else
+                            return true
+                        end
+                    end,
                     getFunc = function()
-                        return db.guilds[selectedGuildId].settings.mailSubject
+                        return db.guilds[db.selectedGuild].settings.mailSubject
                     end,
                     setFunc = function(text)
-                        db.guilds[selectedGuildId].settings.mailSubject = text
+                        db.guilds[db.selectedGuild].settings.mailSubject = text
                     end
                 },
-                [12] = {
+                [14] = {
                     type = "editbox",
                     name = "MailBody",
                     tooltip = "This is the mail",
                     isExtraWide = true,
                     isMultiline = true,
                     maxChars = MAIL_MAX_BODY_CHARACTERS,
-                    disabled = db.guilds[selectedGuildId].settings.mailEnabled,
+                    disabled = function()
+                        if GetMailingPermission(db.selectedGuild) == true then
+                            return false
+                        else
+                            return true
+                        end
+                    end,
                     getFunc = function()
-                        return db.guilds[selectedGuildId].settings.mailBody
+                        return db.guilds[db.selectedGuild].settings.mailBody
                     end,
                     setFunc = function(text)
-                        db.guilds[selectedGuildId].settings.mailBody = text
+                        db.guilds[db.selectedGuild].settings.mailBody = text
                     end
                 },
-                [13] = {
+                [15] = {
                     type = "submenu",
                     name = "|cffffffBackup options",
+                    disabled = function()
+                        if GetNotingPermission(db.selectedGuild) == true then
+                            return false
+                        else
+                            return true
+                        end
+                    end,
                     controls = {
                         [1] = {
                             type = "button",
@@ -636,10 +838,11 @@ function Ghostwriter.CreateSettingsWindow()
                             tooltip = "Will backup all notes in the currently selected guild",
                             isDangerous = true,
                             func = function()
-                                BackupNotes(selectedGuildId)
+                                BackupNotes(db.selectedGuild)
                             end,
                             width = "half",
-                            warning = "This will replace every currently saved note! If you want to retrieve a note do so before you backup! \n\nAre you sure you want to proceed?"
+                            warning = "This will replace every currently saved note in " ..
+                                CreateGuildLink(db.selectedGuild) .. "! If you want to retrieve a note do so before you backup! \n\nAre you sure you want to proceed?"
                         },
                         [2] = {
                             type = "checkbox",
@@ -651,79 +854,24 @@ function Ghostwriter.CreateSettingsWindow()
                             tooltip = "Will automatically backup membernotes!!",
                             warning = "This will backup your notes upon loading into the game and if any note is changed in your guild! ",
                             getFunc = function()
-                                return db.guilds[selectedGuildId].autobackup
+                                return db.guilds[db.selectedGuild].autobackup
                             end,
                             setFunc = function(newValue)
-                                db.guilds[selectedGuildId].autobackup = newValue
+                                db.guilds[db.selectedGuild].autobackup = newValue
                             end
                         }
                     }
-                },
-                [14] = {
-                    type = "submenu",
-                    name = "Permission Setup",
-                    controls = {
-                        [1] = {
-                            type = "editbox",
-                            name = "Setup Noting Permissions",
-                            tooltip = "This message will be pasted in your chat!",
-                            isExtraWide = false,
-                            isMultiline = false,
-                            disabled = false,
-                            width = "full",
-                            getFunc = function()
-                                return "@accountname"
-                            end,
-                            setFunc = function(text)
-                                writePermissionNote(selectedGuildId, text, noting)
-                            end
-                        },
-                        [2] = {
-                            type = "editbox",
-                            name = "Setup Mailing Permissions",
-                            tooltip = "This message will be pasted in your chat!",
-                            isExtraWide = false,
-                            isMultiline = false,
-                            disabled = false,
-                            width = "full",
-                            getFunc = function()
-                                return "@accountname"
-                            end,
-                            setFunc = function(text)
-                                writePermissionNote(selectedGuildId, text, mailing)
-                            end
-                        },
-                        [3] = {
-                            type = "editbox",
-                            name = "Setup ChatMessage Permissions",
-                            tooltip = "This message will be pasted in your chat!",
-                            isExtraWide = false,
-                            isMultiline = false,
-                            disabled = false,
-                            width = "full",
-                            getFunc = function()
-                                return "@accountname"
-                            end,
-                            setFunc = function(text)
-                                writePermissionNote(selectedGuildId, text, chatting)
-                            end
-                        },
-                        [4] = {
-                            type = "editbox",
-                            name = "Setup general Permissions",
-                            tooltip = "This message will be pasted in your chat!",
-                            isExtraWide = false,
-                            isMultiline = false,
-                            disabled = false,
-                            width = "full",
-                            getFunc = function()
-                                return "@accountname"
-                            end,
-                            setFunc = function(text)
-                                writePermissionNote(selectedGuildId, text, all)
-                            end
-                        }
-                    }
+                }
+            }
+        },
+        [6] = {
+            type = "submenu",
+            name = "Changelog",
+            controls = {
+                [1] = {
+                    type = "description",
+                    title = "Changelog current Version",
+                    text = "Initially released"
                 }
             }
         }
@@ -732,26 +880,32 @@ function Ghostwriter.CreateSettingsWindow()
     LAM:RegisterOptionControls("GhostwriterOptions", optionsData)
 end
 
---------------------
----OnPlayerActivated
---------------------
+----------------------
+---OnPlayerActivated--
+----------------------
 local function OnPlayerActivated()
     GetGuilds()
     LGRSetupGuilds()
-    
-
+    firstLoad()
     GW.myGuildColumn:SetGuildFilter(LGRGuilds)
-
 end
 
--------------------
----Initialize Function
-------------------
-
+------------------------
+---Initialize Function--
+------------------------
+-- TODO: no clue something is odd there, the debug messages wont get printed so my SVs are not there?!
 function GW.Initialize()
     Ghostwriter.Vars = ZO_SavedVars:NewAccountWide("GWSettings", GW.variableVersion, nil, defaults, GetWorldName())
     db = Ghostwriter.Vars
-    GetGuilds()
+    -- GetGuilds()
+
+    zo_callLater(
+        function()
+            LoginAlert()
+        end,
+        500
+    )
+
     GW.RosterRow()
     Ghostwriter.CreateSettingsWindow()
 
@@ -759,5 +913,8 @@ function GW.Initialize()
 
     EVENT_MANAGER:UnregisterForEvent(GW.name, EVENT_ADD_ON_LOADED)
 end
+----------
+--Events--
+----------
 EVENT_MANAGER:RegisterForEvent(GW.name, EVENT_ADD_ON_LOADED, Ghostwriter.OnAddOnLoaded)
 EVENT_MANAGER:RegisterForEvent(GW.name, EVENT_PLAYER_ACTIVATED, OnPlayerActivated)
