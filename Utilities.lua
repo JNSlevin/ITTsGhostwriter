@@ -191,27 +191,39 @@ function LGRSetupGuilds()
     --d(LGRGuilds)
 end
 -- TODO: saveguard cooldown
-function writeMail(name, subject, body)
-    -- local count = i
+mailCount = 0
+function writeMail(name, subject, body, guildId)
+    local mailCount = mailCount + 1
 
-    RequestOpenMailbox()
-    SendMail(name, subject, body)
-    CloseMailbox()
-    --[[  if m <= total then
-        count = count - 1
-    end ]]
+    zo_callLater(
+        function()
+            RequestOpenMailbox()
+            SendMail(name, subject, body)
+            CloseMailbox()
+            mailCount = mailCount - 1
+        end,
+        5000 * mailCount
+    )
 end
+noteCount = 0
 function writeNote(guildId, memberIndex, note)
-    local displayName, noteContents = GetGuildMemberInfo(guildId, i)
-    local count = i
-
-    SetGuildMemberNote(guildId, memberIndex, note)
-
-    if i <= total then
-        count = count + 1
-    end
+    noteCount = noteCount + 1
+    d(noteCount .. " notes called")
+    zo_callLater(
+        function()
+            SetGuildMemberNote(guildId, memberIndex, note)
+            noteCount = noteCount - 1
+            d(noteCount .. "notes remaining")
+        end,
+        7000 * noteCount
+    )
 end
-
+--[[ local identifier = "GWNoteCooldown"
+function writeNote(guildId, memberIndex, note)
+    SetGuildMemberNote(guildId, memberIndex, note)
+end
+EVENT_MANAGER:RegisterForUpdate(identifier, 7000, writeNote)
+EVENT_MANAGER:UnregisterForUpdate(identifier) ]]
 function OnNoteChanged(_, guildId, displayName, note)
     notecount = notecount + 1
     if count <= total then
@@ -225,7 +237,7 @@ function OnNoteChanged(_, guildId, displayName, note)
         chat:Print("Finished writing notes for " .. link)
     end
 end
-EVENT_MANAGER:RegisterForEvent(GW.name, EVENT_GUILD_MEMBER_NOTE_CHANGED, OnNoteChanged)
+-- EVENT_MANAGER:RegisterForEvent(GW.name, EVENT_GUILD_MEMBER_NOTE_CHANGED, OnNoteChanged)
 
 function OnMailSent()
     if count <= total then
@@ -242,8 +254,9 @@ end
 -- EVENT_MANAGER:RegisterForEvent(GW.name, EVENT_MAIL_SEND_SUCCESS, OnMailSent)
 function CreateGuildLink(guildId)
     alliance = GetGuildAlliance(guildId)
-    guildIdNum = tonumber(guildId)
+    gIndex = GetGuildIndex(guildId)
     name = GetGuildName(guildId)
+    color = GetGuildColor(gIndex)
     allianceIcon = {}
     if alliance == 1 then
         allianceIcon = "|t24:24:/esoui/art/journal/gamepad/gp_questtypeicon_guild.dds|t"
@@ -253,14 +266,6 @@ function CreateGuildLink(guildId)
         allianceIcon = "|t24:24:/esoui/art/guild/guildhistory_indexicon_guild_down.dds|t"
     end
 
-    local numg = 0
-    for gi = 1, GetNumGuilds() do
-        local gcheck = GetGuildId(gi)
-        if (guildId == gcheck) then
-            numg = gi
-        end
-        color = GetGuildColor(numg)
-    end
     guildLink = "|c" .. color.hex .. "[|H1:guild::" .. guildId .. "|h " .. name .. " ]|h|r"
 
     return guildLink
