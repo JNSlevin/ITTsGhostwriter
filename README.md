@@ -1,4 +1,4 @@
-# Ghostwriter
+# ITT's Ghostwriter
 ## About
 As a guildmaster of various trading guilds i have realized over the years that the membernotes are one of the most important features in leading a guild.
 They are the only way to store additional information on guildmembers. 
