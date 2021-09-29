@@ -1,0 +1,26 @@
+## Title: ITTs |c04B4AEGhostwriter
+## Author: |c268074JN_Slevin|r
+## Version: 0.4
+## Description: Keeps on top of newcomers, woosh! Part of the ITTs Bot family, handy helpers for Trade Guilds.
+## APIVersion: 101031
+## SavedVariables: GWSettings GWData
+## DependsOn: LibAddonMenu-2.0 LibChatMessage LibGuildRoster LibCustomMenu>=711 LibDialog
+## 
+## 
+
+
+
+
+
+
+ITTsGhostwriter.lua
+ITTsGhostwriter.txt
+ITTsGhostwriter.xml
+Alerts.lua
+Utilities.lua
+
+
+
+# This Add-on is not created by, affiliated with, or sponsored by, ZeniMax Media Inc. or its affiliates.
+# The Elder Scrolls® and related logos are registered trademarks or trademarks of ZeniMax Media Inc. in the United States
+# and/or other countries. All rights reserved.
