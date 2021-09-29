@@ -53,7 +53,7 @@ These settings include:
   *most guilds will get a ton of empty applications, so some of them have a threshold of champion points where they accept the applicant anyway
 - Enable the chatmessage
   - Set the template
-- Enable the note **__Be careful__ here when accepting a bulk of new applicants. If you do it too fast the game will boot you for setting notes too fast!**
+- Enable the note 
   - Set the template
 - Enable the Mail
   - Set both templates
@@ -62,7 +62,7 @@ These settings include:
 - Automatically backup notes upon 
   * Login
   * Reload UI
-  * When a note gets changed
+  * When the note gets changed
     * This will overwrite older notes rather fast, so retrieving specific notes will be harder.
 
 ### Miscellaneous features
