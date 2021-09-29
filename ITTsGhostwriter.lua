@@ -472,16 +472,14 @@ function GW.RosterRow()
                     local _, note, rankIndex, _, _ = GetGuildMemberInfo(guildId, index)
                     local iName, iIndex = GetGuildInviteeInfo(guildId, 1)
                     local rankId = GetGuildRankId(guildId, rankIndex)
-                    if note == "" then
-                        return ""
+                    if GWData[worldName].guilds.savedNotes[guildId][data.displayName] ~= "" and note == "" then
+                        return "|cFF0000|t24:24:esoui/art/miscellaneous/check_icon_32.dds:inheritcolor|t|r"
                     elseif GWData[worldName].guilds.savedNotes[guildId][data.displayName] == "" then
-                        return ""
+                        return "|c585858|t24:24:esoui/art/miscellaneous/check_icon_32.dds:inheritcolor|t|r"
                     elseif GWData[worldName].guilds.savedNotes[guildId][data.displayName] == note then
-                        --[[ elseif note == nil then
-                        return "" ]]
                         return "|c00ff00|t24:24:esoui/art/miscellaneous/check_icon_32.dds:inheritcolor|t|r"
                     else
-                        return "|cFFBF00|t24:24:esoui/art/miscellaneous/check_icon_32.dds:inheritcolor|t|r"
+                        return ""
                     end
                 end
                 --[[ OnMouseEnter = function(guildId, data, control)
