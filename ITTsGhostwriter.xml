@@ -1,0 +1,20 @@
+<GuiXml>
+	<Controls>
+		<!-- Every control's name must be _unique_. -->
+		<Button name="GW_button" inherits="ZO_DefaultButton" text="Backup Notes" hidden="true">
+			<OnClicked>BackupNotes(GUILD_ROSTER_MANAGER:GetGuildId())</OnClicked>
+			<Dimensions x="125"/>
+			<OnInitialized>
+            self:SetParent(ZO_GuildRoster)
+              
+            </OnInitialized>
+			<Anchor point="LEFT" relativeTo="ZO_GuildRosterHideOffline" relativePoint="LEFT" offsetX="-135" offsetY="0"  />
+			<Textures
+              normal    ="/esoui/art/buttons/eso_buttonlarge_normal.dds"
+              pressed    ="/esoui/art/buttons/eso_buttonllarge_mousedown.dds"
+              mouseOver  ="/esoui/art/buttons/eso_buttonlarge_mouseover.dds"
+			  disabled = "/esoui/art/buttons/eso_buttonlarge_disabled.dds"
+                     />
+		</Button>
+	</Controls>
+</GuiXml>
