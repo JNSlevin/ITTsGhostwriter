@@ -166,7 +166,7 @@ function GetGWMailingPermission(guildId)
         end
     end
 end
-function GuildPermissions(guildId)
+--[[function GuildPermissions(guildId)
     if
         DoesPlayerHaveGuildPermission(guildId, "GUILD_PERMISSION_GUILD_PERMISSION_BANK_WITHDRAW_GOLD") and
             DoesPlayerHaveGuildPermission(guildId, "GUILD_PERMISSION_OFFICER_CHAT_WRITE") and
@@ -176,7 +176,7 @@ function GuildPermissions(guildId)
     else
         return false
     end
-end
+end]]
 
 function LGRSetupGuilds()
     for i = 1, GetNumGuilds() do
