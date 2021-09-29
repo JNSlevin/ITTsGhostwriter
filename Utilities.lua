@@ -38,14 +38,6 @@ function CreateGuildLink(guildId)
     gIndex = GetGuildIndex(guildId)
     name = GetGuildName(guildId)
     color = GetGuildColor(gIndex)
-    allianceIcon = {}
-    if alliance == 1 then
-        allianceIcon = "|t24:24:/esoui/art/journal/gamepad/gp_questtypeicon_guild.dds|t"
-    elseif alliance == 2 then
-        allianceIcon = "|t16:16/esoui/art/stats/alliancebadge_ebonheart.dds|t"
-    elseif alliance == 3 then
-        allianceIcon = "|t24:24:/esoui/art/guild/guildhistory_indexicon_guild_down.dds|t"
-    end
 
     guildLink = "|c" .. color.hex .. "[|H1:gwguild::" .. guildId .. "|h " .. name .. " ]|h|r"
 
@@ -185,27 +177,7 @@ function GuildPermissions(guildId)
         return false
     end
 end
-function writePermissionNote(guildId, playerName, perm)
-    local index = GetGuildMemberIndexFromDisplayName(guildId, playerName)
-    local name, note, rankIndex, _, _ = GetGuildMemberInfo(guildId, index)
-    local link = CreateGuildLink(guildId)
-    -- local contents = (identifier .. note)
-    -- string.gsub(text, "|cGW(.-)|r", "|cGWnote|r")
-    if name ~= playerName then
-        chat:Print("Player not found in " .. link)
-        return
-    end
-    if perm == noting then
-        -- d("test")
-        contents = string.gsub(note, "|cGW(.-)|r", NOTE_PATTERN)
-        contents = (NOTE_PATTERN .. note)
-    else
-        -- contents = (NOTE_PATTERN .. note)
-        contents = string.gsub(note, "|cGW(.-)|r", NOTE_PATTERN)
-    end
 
-    SetGuildMemberNote(guildId, index, contents)
-end
 function LGRSetupGuilds()
     for i = 1, GetNumGuilds() do
         -- local gIndex = GetGuildIndex(i)
@@ -255,41 +227,7 @@ function writeNote(guildId, memberIndex, note)
         7000 * noteCount
     )
 end
---[[ local identifier = "GWNoteCooldown"
-function writeNote(guildId, memberIndex, note)
-    SetGuildMemberNote(guildId, memberIndex, note)
-end
-EVENT_MANAGER:RegisterForUpdate(identifier, 7000, writeNote)
-EVENT_MANAGER:UnregisterForUpdate(identifier) ]]
---* not currently in use
-function OnNoteChanged(_, guildId, displayName, note)
-    notecount = notecount + 1
-    if count <= total then
-        zo_callLater(
-            function()
-                writeNote(i)
-            end,
-            8000
-        )
-    elseif count > total then
-        chat:Print("Finished writing notes for " .. link)
-    end
-end
--- EVENT_MANAGER:RegisterForEvent(GW.name, EVENT_GUILD_MEMBER_NOTE_CHANGED, OnNoteChanged)
 
-function OnMailSent()
-    if count <= total then
-        zo_callLater(
-            function()
-                writeMail(i)
-            end,
-            8000
-        )
-    elseif count > total then
-        chat:Print("Finished writing notes for " .. link)
-    end
-end
--- EVENT_MANAGER:RegisterForEvent(GW.name, EVENT_MAIL_SEND_SUCCESS, OnMailSent)
 ----------------------------------------------------------
 ----------------------------------------------------------
 ----------------------------------------------------------
