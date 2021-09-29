@@ -38,7 +38,7 @@ local dataDefaults = {}
 -------------
 
 local guildName = GetGuildName()
-GWad = ("\n\n\nSent via |cffffffITT's|c" .. GW_COLOR .. "Ghostwriter|r")
+GWadvertisement = ("\n\n\nSent via |cffffffITT's|c" .. GW_COLOR .. "Ghostwriter|r")
 local guildIds = {}
 local settingsTable = {}
 local worldName = GetWorldName()
