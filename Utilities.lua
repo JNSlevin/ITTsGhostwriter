@@ -1,6 +1,6 @@
 local GW = {
     name = "ITTsGhostwriter",
-    version = 0.1
+    version = 0.4
 }
 worldName = GetWorldName()
 local chat = LibChatMessage("ITTsGhostwriter", "GW")
