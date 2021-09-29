@@ -44,6 +44,7 @@ These settings include:
   * I have learned that since the guildfinder was introduced, most of the time when people join the guild they arent online)
 - Enabling to check for the time people are offline upon joining the guild 
   * The maximum amount of time an application is active is 15 days, so when people are offline for longer than 14 days it will include an offlinemode warning in the note
+  * Enabling or disabling a button in the guildroster to backup notes in the selected guild!
 
 #### Guildspecific
 ##### First choose the guild you would like to change the settings for!
