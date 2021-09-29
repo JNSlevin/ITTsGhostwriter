@@ -1,9 +1,10 @@
 local GW = {
-    name = "Ghostwriter",
+    name = "ITTsGhostwriter",
     version = 0.1
 }
 worldName = GetWorldName()
-local chat = LibChatMessage("Ghostwriter", "GW")
+local chat = LibChatMessage("ITTsGhostwriter", "GW")
+local chat = chat:SetTagColor(GW_COLOR)
 -----------
 --CONSTANTS
 -----------
@@ -17,9 +18,11 @@ local MAIL_AND_CHAT_PATTERN = "|cGWmach|r"
 local NOTE_MAIL_AND_CHAT_PATTERN = "|cGWxxxx|r"
 
 LGRGuilds = {}
+GWshouldHideFor = {}
 
-notecount = 0
--- thanks ghostbane for this first function <3
+------------------
+--CutomGuildLink--
+------------------
 
 function GetGuildColor(i)
     local r, g, b = GetChatCategoryColor(_G["CHAT_CATEGORY_GUILD_" .. tostring(i)])
@@ -30,9 +33,27 @@ function GetGuildColor(i)
         hex = colorObject:ToHex()
     }
 end
+function CreateGuildLink(guildId)
+    alliance = GetGuildAlliance(guildId)
+    gIndex = GetGuildIndex(guildId)
+    name = GetGuildName(guildId)
+    color = GetGuildColor(gIndex)
+    allianceIcon = {}
+    if alliance == 1 then
+        allianceIcon = "|t24:24:/esoui/art/journal/gamepad/gp_questtypeicon_guild.dds|t"
+    elseif alliance == 2 then
+        allianceIcon = "|t16:16/esoui/art/stats/alliancebadge_ebonheart.dds|t"
+    elseif alliance == 3 then
+        allianceIcon = "|t24:24:/esoui/art/guild/guildhistory_indexicon_guild_down.dds|t"
+    end
+
+    guildLink = "|c" .. color.hex .. "[|H1:gwguild::" .. guildId .. "|h " .. name .. " ]|h|r"
+
+    return guildLink
+end
 function GW.HandleClickEvent(rawLink, mouseButton, linkText, linkStyle, linkType, guildId, ...)
     local gIndex = GetGuildIndex(guildId)
-    if linkType == "guild" then
+    if linkType == "gwguild" then
         -- MAIN_MENU_KEYBOARD:ShowScene("guildHome")
         if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
             MAIN_MENU_KEYBOARD:ShowScene("guildHome")
@@ -40,27 +61,36 @@ function GW.HandleClickEvent(rawLink, mouseButton, linkText, linkStyle, linkType
                 function()
                     GUILD_SELECTOR:SelectGuildByIndex(gIndex)
                 end,
-                1
+                200
             )
 
             return true
         end
+
         if mouseButton == MOUSE_BUTTON_INDEX_MIDDLE then
             zo_callLater(
                 function()
                     GUILD_SELECTOR:SelectGuildByIndex(gIndex)
                 end,
-                1
+                200
             )
-            MAIN_MENU_KEYBOARD:ShowScene("guildRecruitmentKeyboard")
-            -- MAIN_MENU_KEYBOARD:ToggleSceneGroup("guildsSceneGroup", "guildRecruitmentKeyboard")
-            zo_callLater(
-                function()
-                    GUILD_RECRUITMENT_KEYBOARD:ShowApplicationsList()
-                end,
-                1
-            )
-
+            if DoesPlayerHaveGuildPermission(guildId, GUILD_PERMISSION_MANAGE_APPLICATIONS) == true then
+                MAIN_MENU_KEYBOARD:ShowScene("guildRecruitmentKeyboard")
+                -- MAIN_MENU_KEYBOARD:ToggleSceneGroup("guildsSceneGroup", "guildRecruitmentKeyboard")
+                zo_callLater(
+                    function()
+                        GUILD_RECRUITMENT_KEYBOARD:ShowApplicationsList()
+                    end,
+                    250
+                )
+            else
+                zo_callLater(
+                    function()
+                        MAIN_MENU_KEYBOARD:ShowScene("guildRoster")
+                    end,
+                    50
+                )
+            end
             return true
         end
         --TODO: Context Menu
@@ -76,7 +106,12 @@ function GW.HandleClickEvent(rawLink, mouseButton, linkText, linkStyle, linkType
     end
 end
 LINK_HANDLER:RegisterCallback(LINK_HANDLER.LINK_MOUSE_UP_EVENT, GW.HandleClickEvent)
-function GetNotingPermission(guildId)
+
+-------------------------
+--CheckCustomPermission--
+-------------------------
+
+function GetGWNotingPermission(guildId)
     local playerName = GetUnitDisplayName("player")
     local numMembers = GetNumGuildMembers(guildId)
 
@@ -97,7 +132,7 @@ function GetNotingPermission(guildId)
         end
     end
 end
-function GetChatMessagePermission(guildId)
+function GetGWChatPermission(guildId)
     local playerName = GetUnitDisplayName("player")
     local numMembers = GetNumGuildMembers(guildId)
 
@@ -118,7 +153,7 @@ function GetChatMessagePermission(guildId)
         end
     end
 end
-function GetMailingPermission(guildId)
+function GetGWMailingPermission(guildId)
     local playerName = GetUnitDisplayName("player")
     local numMembers = GetNumGuildMembers(guildId)
 
@@ -169,51 +204,53 @@ function writePermissionNote(guildId, playerName, perm)
         contents = string.gsub(note, "|cGW(.-)|r", NOTE_PATTERN)
     end
 
-    --[[ if perm == mailing then
-        contents = string.gsub(note, "|cGW(.-)|r", MAIL_PATTERN)
-    end
-    if perm == chatting then
-        contents = string.gsub(note, "|cGW(.-)|r", CHAT_PATTERN)
-    end
-    if perm == all then
-        contents = string.gsub(note, "|cGW(.-)|r", NOTE_MAIL_AND_CHAT_PATTERN)
-    end ]]
     SetGuildMemberNote(guildId, index, contents)
 end
 function LGRSetupGuilds()
     for i = 1, GetNumGuilds() do
         -- local gIndex = GetGuildIndex(i)
         local guildId = GetGuildId(i)
-        if GetNotingPermission(guildId) == true then
+        if GetGWNotingPermission(guildId) == true then
             table.insert(LGRGuilds, guildId)
+            GWshouldHideFor[guildId] = false
+        else
+            GWshouldHideFor[guildId] = true
         end
     end
     --d(LGRGuilds)
 end
--- TODO: saveguard cooldown
+
+--------------
+--Automation--
+--------------
+noteCount = 0
 mailCount = 0
-function writeMail(name, subject, body, guildId)
+function writeMail(name, subject, body)
     local mailCount = mailCount + 1
 
     zo_callLater(
         function()
             RequestOpenMailbox()
             SendMail(name, subject, body)
-            CloseMailbox()
+            zo_callLater(
+                function()
+                    CloseMailbox()
+                end,
+                1000
+            )
             mailCount = mailCount - 1
         end,
         5000 * mailCount
     )
 end
-noteCount = 0
+
 function writeNote(guildId, memberIndex, note)
     noteCount = noteCount + 1
-    d(noteCount .. " notes called")
+
     zo_callLater(
         function()
             SetGuildMemberNote(guildId, memberIndex, note)
             noteCount = noteCount - 1
-            d(noteCount .. "notes remaining")
         end,
         7000 * noteCount
     )
@@ -224,6 +261,7 @@ function writeNote(guildId, memberIndex, note)
 end
 EVENT_MANAGER:RegisterForUpdate(identifier, 7000, writeNote)
 EVENT_MANAGER:UnregisterForUpdate(identifier) ]]
+--* not currently in use
 function OnNoteChanged(_, guildId, displayName, note)
     notecount = notecount + 1
     if count <= total then
@@ -252,24 +290,9 @@ function OnMailSent()
     end
 end
 -- EVENT_MANAGER:RegisterForEvent(GW.name, EVENT_MAIL_SEND_SUCCESS, OnMailSent)
-function CreateGuildLink(guildId)
-    alliance = GetGuildAlliance(guildId)
-    gIndex = GetGuildIndex(guildId)
-    name = GetGuildName(guildId)
-    color = GetGuildColor(gIndex)
-    allianceIcon = {}
-    if alliance == 1 then
-        allianceIcon = "|t24:24:/esoui/art/journal/gamepad/gp_questtypeicon_guild.dds|t"
-    elseif alliance == 2 then
-        allianceIcon = "|t16:16/esoui/art/stats/alliancebadge_ebonheart.dds|t"
-    elseif alliance == 3 then
-        allianceIcon = "|t24:24:/esoui/art/guild/guildhistory_indexicon_guild_down.dds|t"
-    end
-
-    guildLink = "|c" .. color.hex .. "[|H1:guild::" .. guildId .. "|h " .. name .. " ]|h|r"
-
-    return guildLink
-end
+----------------------------------------------------------
+----------------------------------------------------------
+----------------------------------------------------------
 
 function GetGuildIndex(guildId)
     local numg = 0
