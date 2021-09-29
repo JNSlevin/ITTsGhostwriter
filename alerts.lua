@@ -3,7 +3,7 @@ local chat = chat:SetTagColor(GW_COLOR)
 -- ITTsGhostwriter = {}
 local GW = {
     name = "ITTsGhostwriter",
-    version = 0.1
+    version = 0.4
 }
 
 worldName = GetWorldName()
