@@ -50,7 +50,7 @@ These settings include:
 ##### First choose the guild you would like to change the settings for!
 - Choose the date format for the date replacement
 - Set an application threshhold 
-  *most guilds will get a ton of empty applications, so some of them have a threshhold of champion points where they accept the applicant anyway
+  *most guilds will get a ton of empty applications, so some of them have a threshold of champion points where they accept the applicant anyway
 - Enable the chatmessage
   - Set the template
 - Enable the note **__Be careful__ here when accepting a bulk of new applicants. If you do it too fast the game will boot you for setting notes too fast!**
