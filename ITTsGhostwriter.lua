@@ -11,7 +11,6 @@ ITTsGhostwriter = GW
 --------
 local LAM = LibAddonMenu2
 local libCM = LibCustomMenu
-local libDialog = LibDialog
 local chat = LibChatMessage("ITTsGhostwriter", "GW") -- long and short tag to identify who is printing the message
 local GW_COLOR = "CCA21A"
 local chat = chat:SetTagColor(GW_COLOR)
