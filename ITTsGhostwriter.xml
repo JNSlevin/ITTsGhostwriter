@@ -1,7 +1,7 @@
 <GuiXml>
 	<Controls>
 		<!-- Every control's name must be _unique_. -->
-		<Button name="GW_button" inherits="ZO_DefaultButton" text="|cff0000Backup Notes" hidden="true">
+		<Button name="GW_button" inherits="ZO_DefaultButton" text="Backup Notes" hidden="true">
 			<OnClicked>BackupNotes(GUILD_ROSTER_MANAGER:GetGuildId())</OnClicked>		
 			<OnInitialized>
             			self:SetParent(ZO_GuildRoster)        
