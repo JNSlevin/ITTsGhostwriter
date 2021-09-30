@@ -947,8 +947,6 @@ local function OnPlayerActivated()
     GetGuilds()
     GW.SetupGuilds()
     firstLoad()
-    d(GW.GuildsWithPermisso)
-    d(GW.shouldHideFor)
     GW.myGuildColumn:SetGuildFilter(GW.GuildsWithPermisson)
 end
 
