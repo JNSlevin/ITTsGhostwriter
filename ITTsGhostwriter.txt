@@ -4,7 +4,7 @@
 ## Description: Keeps on top of newcomers, woosh! Part of the ITTs Bot family, handy helpers for Trade Guilds.
 ## APIVersion: 101031
 ## SavedVariables: GWSettings GWData
-## DependsOn: LibAddonMenu-2.0 LibChatMessage LibGuildRoster LibCustomMenu>=711 LibDialog
+## DependsOn: LibAddonMenu-2.0 LibChatMessage LibGuildRoster LibCustomMenu>=711
 ## 
 ## 
 
