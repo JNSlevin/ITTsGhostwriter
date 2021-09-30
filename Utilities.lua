@@ -1,8 +1,13 @@
-local GW = {
-    name = "ITTsGhostwriter",
-    version = 0.4
-}
-worldName = GetWorldName()
+local GW =
+    ITTsGhostwriter or
+    {
+        name = "ITTsGhostwriter",
+        version = 0.3,
+        variableVersion = 194
+    }
+ITTsGhostwriter = GW
+
+local worldName = GetWorldName()
 local chat = LibChatMessage("ITTsGhostwriter", "GW")
 local chat = chat:SetTagColor(GW_COLOR)
 -----------
@@ -17,14 +22,14 @@ local NOTE_AND_CHAT_PATTERN = "|cGWnoch|r"
 local MAIL_AND_CHAT_PATTERN = "|cGWmach|r"
 local NOTE_MAIL_AND_CHAT_PATTERN = "|cGWxxxx|r"
 
-LGRGuilds = {}
-GWshouldHideFor = {}
+GW.GuildsWithPermisson = {999999999999999} -- LibGuildRoster needs one guildId to filter, if its nil it will show in all guilds
+GW.shouldHideFor = {}
 
 ------------------
 --CutomGuildLink--
 ------------------
 
-function GetGuildColor(i)
+function GW.GetGuildColor(i)
     local r, g, b = GetChatCategoryColor(_G["CHAT_CATEGORY_GUILD_" .. tostring(i)])
     local colorObject = ZO_ColorDef:New(r, g, b)
 
@@ -33,18 +38,25 @@ function GetGuildColor(i)
         hex = colorObject:ToHex()
     }
 end
-function CreateGuildLink(guildId)
+function GW.CreateGuildLink(guildId)
     alliance = GetGuildAlliance(guildId)
-    gIndex = GetGuildIndex(guildId)
+    gIndex = GW.GetGuildIndex(guildId)
     name = GetGuildName(guildId)
-    color = GetGuildColor(gIndex)
-
+    color = GW.GetGuildColor(gIndex)
+    --[[ allianceIcon = {}
+    if alliance == 1 then
+        allianceIcon = "|t24:24:/esoui/art/journal/gamepad/gp_questtypeicon_guild.dds|t"
+    elseif alliance == 2 then
+        allianceIcon = "|t16:16/esoui/art/stats/alliancebadge_ebonheart.dds|t"
+    elseif alliance == 3 then
+        allianceIcon = "|t24:24:/esoui/art/guild/guildhistory_indexicon_guild_down.dds|t"
+    end ]]
     guildLink = "|c" .. color.hex .. "[|H1:gwguild::" .. guildId .. "|h " .. name .. " ]|h|r"
 
     return guildLink
 end
 function GW.HandleClickEvent(rawLink, mouseButton, linkText, linkStyle, linkType, guildId, ...)
-    local gIndex = GetGuildIndex(guildId)
+    local gIndex = GW.GetGuildIndex(guildId)
     if linkType == "gwguild" then
         -- MAIN_MENU_KEYBOARD:ShowScene("guildHome")
         if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
@@ -103,8 +115,8 @@ LINK_HANDLER:RegisterCallback(LINK_HANDLER.LINK_MOUSE_UP_EVENT, GW.HandleClickEv
 --CheckCustomPermission--
 -------------------------
 
-function GetGWNotingPermission(guildId)
-    local playerName = GetUnitDisplayName("player")
+function GW.GetPermission_Note(guildId)
+    local playerName = GetDisplayName()
     local numMembers = GetNumGuildMembers(guildId)
 
     for i = 1, numMembers do
@@ -124,8 +136,8 @@ function GetGWNotingPermission(guildId)
         end
     end
 end
-function GetGWChatPermission(guildId)
-    local playerName = GetUnitDisplayName("player")
+function GW.GetPermission_Chat(guildId)
+    local playerName = GetDisplayName()
     local numMembers = GetNumGuildMembers(guildId)
 
     for i = 1, numMembers do
@@ -145,8 +157,8 @@ function GetGWChatPermission(guildId)
         end
     end
 end
-function GetGWMailingPermission(guildId)
-    local playerName = GetUnitDisplayName("player")
+function GW.GetPermission_Mail(guildId)
+    local playerName = GetDisplayName()
     local numMembers = GetNumGuildMembers(guildId)
 
     for i = 1, numMembers do
@@ -166,7 +178,7 @@ function GetGWMailingPermission(guildId)
         end
     end
 end
---[[function GuildPermissions(guildId)
+function GuildPermissions(guildId)
     if
         DoesPlayerHaveGuildPermission(guildId, "GUILD_PERMISSION_GUILD_PERMISSION_BANK_WITHDRAW_GOLD") and
             DoesPlayerHaveGuildPermission(guildId, "GUILD_PERMISSION_OFFICER_CHAT_WRITE") and
@@ -176,27 +188,47 @@ end
     else
         return false
     end
-end]]
+end
+--[[ function writePermissionNote(guildId, playerName, perm)
+    local index = GetGuildMemberIndexFromDisplayName(guildId, playerName)
+    local name, note, rankIndex, _, _ = GetGuildMemberInfo(guildId, index)
+    local link = GW.CreateGuildLink(guildId)
+    -- local contents = (identifier .. note)
+    -- string.gsub(text, "|cGW(.-)|r", "|cGWnote|r")
+    if name ~= playerName then
+        chat:Print("Player not found in " .. link)
+        return
+    end
+    if perm == noting then
+        -- d("test")
+        contents = string.gsub(note, "|cGW(.-)|r", NOTE_PATTERN)
+        contents = (NOTE_PATTERN .. note)
+    else
+        -- contents = (NOTE_PATTERN .. note)
+        contents = string.gsub(note, "|cGW(.-)|r", NOTE_PATTERN)
+    end
 
-function LGRSetupGuilds()
+    SetGuildMemberNote(guildId, index, contents)
+end ]]
+function GW.SetupGuilds()
     for i = 1, GetNumGuilds() do
         -- local gIndex = GetGuildIndex(i)
         local guildId = GetGuildId(i)
-        if GetGWNotingPermission(guildId) == true then
-            table.insert(LGRGuilds, guildId)
-            GWshouldHideFor[guildId] = false
+        if GW.GetPermission_Note(guildId) == true then
+            table.insert(GW.GuildsWithPermisson, guildId)
+            GW.shouldHideFor[guildId] = false
         else
-            GWshouldHideFor[guildId] = true
+            GW.shouldHideFor[guildId] = true
         end
     end
-    --d(LGRGuilds)
+    --d(GW.GuildsWithPermisson)
 end
 
 --------------
 --Automation--
 --------------
-noteCount = 0
-mailCount = 0
+local noteCount = 0
+local mailCount = 0
 function writeMail(name, subject, body)
     local mailCount = mailCount + 1
 
@@ -232,15 +264,14 @@ end
 ----------------------------------------------------------
 ----------------------------------------------------------
 
-function GetGuildIndex(guildId)
+function GW.GetGuildIndex(guildId)
     local numg = 0
 
     for gi = 1, GetNumGuilds() do
         local gcheck = GetGuildId(gi)
         local idNum = tonumber(guildId)
         if (idNum == gcheck) then
-            numg = gi
-            return numg
+            return gi
         end
     end
 end
