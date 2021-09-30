@@ -1,11 +1,11 @@
 # ITT's Ghostwriter
 ## About
-As a guildmaster of various trading guilds i have realized over the years that the membernotes are one of the most important features in leading a guild.
+As a guildmaster of various trading guilds I have realized over the years that the membernotes are one of the most important features in leading a guild.
 They are the only way to store additional information on guildmembers. 
 As such in my guilds the notes are rather important and since members do not know whats important and whats not they will leave the guild for various reasons and will not tell us about it.
 Resulting in that important information being lost.
 
-So i sat down and started to write an addon which helps me recover that lost information by saving it locally.
+So I sat down and started to write an addon which helps me recover that lost information by saving it locally.
 Over the time i added various features which i did manually in my guilds, including setting the note for new members and sending a welcome mail explaning what the guild is about etc.
 Additionally most addons we use for administrative work in our guilds are either ancient or lacking. 
 We as ITT released another addon (done by the amazing @ghostbane) which helps us track donations relieably since the only other addon we were aware of that did this was broken since the history change on ZOS' side.
