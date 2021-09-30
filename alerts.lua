@@ -1,48 +1,55 @@
+local GW =
+    ITTsGhostwriter or
+    {
+        name = "ITTsGhostwriter",
+        version = 0.3,
+        variableVersion = 194
+    }
+ITTsGhostwriter = GW
+
 local chat = LibChatMessage("ITTsGhostwriter", "GW") -- long and short tag to identify who is printing the message
 local chat = chat:SetTagColor(GW_COLOR)
 -- ITTsGhostwriter = {}
-local GW = {
-    name = "ITTsGhostwriter",
-    version = 0.4
-}
 
-worldName = GetWorldName()
+local displayName = GetDisplayName()
+local worldName = GetWorldName()
 
-local function NoteAlert(_, guildId, displayName, note)
+function GW.NoteAlert(_, guildId, playerName, note)
     local name = GetGuildName(guildId)
     LibGuildRoster:Refresh()
-    GetGWNotingPermission(guildId)
-    GetGWMailingPermission(guildId)
-    GetGWChatPermission(guildId)
+    GW.GetPermission_Note(guildId)
+    GW.GetPermission_Mail(guildId)
+    GW.GetPermission_Chat(guildId)
     if DoesPlayerHaveGuildPermission(guildId, GUILD_PERMISSION_NOTE_EDIT) == true then
-        if ITTsGhostwriter.Vars.guilds[guildId].settings.noteAlert == true then
+        if GWSettings[worldName][displayName]["$AccountWide"].guilds[guildId].settings.noteAlert == true then
             chat:Print(
-                "Membernote updated for |cffffff" .. ZO_LinkHandler_CreateDisplayNameLink(displayName) .. "|r in |cffffff" .. CreateGuildLink(guildId)
+                "Membernote updated for |cffffff" ..
+                    ZO_LinkHandler_CreateDisplayNameLink(playerName) .. "|r in |cffffff" .. GW.CreateGuildLink(guildId)
             )
             -- end
-            if ITTsGhostwriter.Vars.guilds[guildId].settings.autobackup == true then
-                GWData[worldName].guilds.savedNotes[guildId][displayName] = note
+            if GWSettings[worldName][displayName]["$AccountWide"].guilds[guildId].settings.autobackup == true then
+                GWData[worldName].guilds.savedNotes[guildId][playerName] = note
                 LibGuildRoster:Refresh()
             end
         end
     end
 end
 
-function LoginAlert()
+function GW.LoginAlert()
     for g = 1, GetNumGuilds() do
         local guildId = GetGuildId(g)
 
-        ApplicationAlert(_, guildId)
+        GW.ApplicationAlert(_, guildId)
     end
 end
-function ApplicationAlert(_, guildId)
+function GW.ApplicationAlert(_, guildId)
     LibGuildRoster:Refresh()
     local lvl, cp, _, _, playerName, _, _, message = GetGuildFinderGuildApplicationInfoAt(guildId, i)
     -- level,  championPoints,  Alliance alliance,  classId,  accountName,  characterName,  achievementPoints,  applicationMessage
-    local name = CreateGuildLink(guildId)
+    local name = GW.CreateGuildLink(guildId)
     local numApplications = GetGuildFinderNumGuildApplications(guildId)
     local nEmpty = 0
-    local threshold = ITTsGhostwriter.Vars.guilds[guildId].settings.applicationThreshold
+    local threshold = GWSettings[worldName][displayName]["$AccountWide"].guilds[guildId].settings.applicationThreshold
     local overthreshold = 0
     -- chat:Print("started")
     if DoesPlayerHaveGuildPermission(guildId, GUILD_PERMISSION_MANAGE_APPLICATIONS) == true then
@@ -57,7 +64,7 @@ function ApplicationAlert(_, guildId)
                     overthreshold = overthreshold + 1
                 end
             end
-            if ITTsGhostwriter.Vars.guilds[guildId].settings.applicationAlert == true then
+            if GWSettings[worldName][displayName]["$AccountWide"].guilds[guildId].settings.applicationAlert == true then
                 if numApplications ~= 0 then
                     if threshold < 1 then
                         chat:Print("You have |cffffff" .. numApplications .. "|r open Applications (|cffffff" .. nEmpty .. "|r empty) in " .. name)
@@ -79,5 +86,5 @@ end
 --EVENTS
 -----------
 
-EVENT_MANAGER:RegisterForEvent(GW.name, EVENT_GUILD_MEMBER_NOTE_CHANGED, NoteAlert)
-EVENT_MANAGER:RegisterForEvent(GW.name, EVENT_GUILD_FINDER_GUILD_NEW_APPLICATIONS, ApplicationAlert)
+EVENT_MANAGER:RegisterForEvent(GW.name, EVENT_GUILD_MEMBER_NOTE_CHANGED, GW.NoteAlert)
+EVENT_MANAGER:RegisterForEvent(GW.name, EVENT_GUILD_FINDER_GUILD_NEW_APPLICATIONS, GW.ApplicationAlert)
