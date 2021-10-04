@@ -2,7 +2,7 @@ local GW =
     ITTsGhostwriter or
     {
         name = "ITTsGhostwriter",
-        version = 0.3,
+        version = 0.7,
         variableVersion = 194
     }
 ITTsGhostwriter = GW
@@ -20,16 +20,20 @@ function GW.NoteAlert(_, guildId, playerName, note)
     GW.GetPermission_Note(guildId)
     GW.GetPermission_Mail(guildId)
     GW.GetPermission_Chat(guildId)
-    if DoesPlayerHaveGuildPermission(guildId, GUILD_PERMISSION_NOTE_EDIT) == true then
-        if GWSettings[worldName][displayName]["$AccountWide"].guilds[guildId].settings.noteAlert == true then
-            chat:Print(
-                "Membernote updated for |cffffff" ..
-                    ZO_LinkHandler_CreateDisplayNameLink(playerName) .. "|r in |cffffff" .. GW.CreateGuildLink(guildId)
-            )
-            -- end
-            if GWSettings[worldName][displayName]["$AccountWide"].guilds[guildId].settings.autobackup == true then
-                GWData[worldName].guilds.savedNotes[guildId][playerName] = note
-                LibGuildRoster:Refresh()
+    if not GWSettings[worldName][displayName]["$AccountWide"].guilds[guildId].settings.noteAlert then
+        return
+    else
+        if DoesPlayerHaveGuildPermission(guildId, GUILD_PERMISSION_NOTE_EDIT) == true then
+            if GWSettings[worldName][displayName]["$AccountWide"].guilds[guildId].settings.noteAlert == true then
+                chat:Print(
+                    "Membernote updated for |cffffff" ..
+                        ZO_LinkHandler_CreateDisplayNameLink(playerName) .. "|r in |cffffff" .. GW.CreateGuildLink(guildId)
+                )
+                -- end
+                if GWSettings[worldName][displayName]["$AccountWide"].guilds[guildId].settings.autobackup == true then
+                    GWData[worldName].guilds.savedNotes[guildId][playerName] = note
+                    LibGuildRoster:Refresh()
+                end
             end
         end
     end
