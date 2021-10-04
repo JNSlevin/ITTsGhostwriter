@@ -2,7 +2,7 @@ local GW =
     ITTsGhostwriter or
     {
         name = "ITTsGhostwriter",
-        version = 0.3,
+        version = 0.7,
         variableVersion = 194
     }
 ITTsGhostwriter = GW
@@ -58,26 +58,21 @@ end
 function GW.HandleClickEvent(rawLink, mouseButton, linkText, linkStyle, linkType, guildId, ...)
     local gIndex = GW.GetGuildIndex(guildId)
     if linkType == "gwguild" then
+        GUILD_SELECTOR:SelectGuildByIndex(gIndex)
         -- MAIN_MENU_KEYBOARD:ShowScene("guildHome")
         if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
             MAIN_MENU_KEYBOARD:ShowScene("guildHome")
-            zo_callLater(
-                function()
-                    GUILD_SELECTOR:SelectGuildByIndex(gIndex)
-                end,
-                200
-            )
 
             return true
         end
 
         if mouseButton == MOUSE_BUTTON_INDEX_MIDDLE then
-            zo_callLater(
+            --[[  zo_callLater(
                 function()
                     GUILD_SELECTOR:SelectGuildByIndex(gIndex)
                 end,
                 200
-            )
+            ) ]]
             if DoesPlayerHaveGuildPermission(guildId, GUILD_PERMISSION_MANAGE_APPLICATIONS) == true then
                 MAIN_MENU_KEYBOARD:ShowScene("guildRecruitmentKeyboard")
                 -- MAIN_MENU_KEYBOARD:ToggleSceneGroup("guildsSceneGroup", "guildRecruitmentKeyboard")
@@ -97,14 +92,75 @@ function GW.HandleClickEvent(rawLink, mouseButton, linkText, linkStyle, linkType
             end
             return true
         end
-        --TODO: Context Menu
+
         if mouseButton == MOUSE_BUTTON_INDEX_RIGHT then
+            ClearMenu()
+
             AddCustomMenuItem(
-                "test",
+                "Show Guild Roster",
                 function()
-                    CHAT_ROUTER:AddDebugMessage("my Func")
+                    MAIN_MENU_KEYBOARD:ShowScene("guildRoster")
+                    --[[ zo_callLater(
+                        function()
+                            GUILD_SELECTOR:SelectGuildByIndex(gIndex)
+                        end,
+                        200
+                    ) ]]
                 end
             )
+            AddCustomMenuItem(
+                "Show Guild Ranks",
+                function()
+                    MAIN_MENU_KEYBOARD:ShowScene("guildRanks")
+                    --[[ zo_callLater(
+                        function()
+                            GUILD_SELECTOR:SelectGuildByIndex(gIndex)
+                        end,
+                        200
+                    ) ]]
+                end
+            )
+            if DoesPlayerHaveGuildPermission(guildId, GUILD_PERMISSION_MANAGE_APPLICATIONS) == true then
+                AddCustomMenuItem(
+                    "Show Guild Recruitment",
+                    function()
+                        MAIN_MENU_KEYBOARD:ShowScene("guildRecruitmentKeyboard")
+                        --[[ zo_callLater(
+                        function()
+                            GUILD_SELECTOR:SelectGuildByIndex(gIndex)
+                        end,
+                        200
+                    ) ]]
+                    end
+                )
+            end
+            if DoesPlayerHaveGuildPermission(guildId, GUILD_PERMISSION_EDIT_HERALDRY) == true then
+                AddCustomMenuItem(
+                    "Show Guild Heraldry",
+                    function()
+                        MAIN_MENU_KEYBOARD:ShowScene("guildHeraldry")
+                        --[[ zo_callLater(
+                        function()
+                            GUILD_SELECTOR:SelectGuildByIndex(gIndex)
+                        end,
+                        200
+                    ) ]]
+                    end
+                )
+            end
+            AddCustomMenuItem(
+                "Show Guild History",
+                function()
+                    MAIN_MENU_KEYBOARD:ShowScene("guildHistory")
+                    --[[ zo_callLater(
+                        function()
+                            GUILD_SELECTOR:SelectGuildByIndex(gIndex)
+                        end,
+                        200
+                    ) ]]
+                end
+            )
+            ShowMenu()
             return true
         end
     end
@@ -229,7 +285,7 @@ end
 --------------
 local noteCount = 0
 local mailCount = 0
-function writeMail(name, subject, body)
+function GW.writeMail(name, subject, body)
     local mailCount = mailCount + 1
 
     zo_callLater(
@@ -248,7 +304,7 @@ function writeMail(name, subject, body)
     )
 end
 
-function writeNote(guildId, memberIndex, note)
+function GW.writeNote(guildId, memberIndex, note)
     noteCount = noteCount + 1
 
     zo_callLater(
