@@ -2,7 +2,7 @@ local GW =
     ITTsGhostwriter or
     {
         name = "ITTsGhostwriter",
-        version = 0.3,
+        version = 0.7,
         variableVersion = 194
     }
 ITTsGhostwriter = GW
@@ -11,9 +11,10 @@ ITTsGhostwriter = GW
 --------
 local LAM = LibAddonMenu2
 local libCM = LibCustomMenu
+local libDialog = LibDialog
 local chat = LibChatMessage("ITTsGhostwriter", "GW") -- long and short tag to identify who is printing the message
-local GW_COLOR = "CCA21A"
 local chat = chat:SetTagColor(GW_COLOR)
+local GW_COLOR = "CCA21A"
 local guildRosterScene = SCENE_MANAGER:GetScene("guildRoster")
 local fragment = ZO_SimpleSceneFragment:New(window)
 
@@ -49,6 +50,7 @@ local rankTable = {}
 local rankTableValue = {}
 local guildTable = {}
 local guildTableValues = {}
+GW.ChatReady = false
 local dateTable = {
     "DD.MM.YY",
     "DD.MM.YYYY",
@@ -57,7 +59,9 @@ local dateTable = {
     "YY-MM-DD",
     "YYYY-MM-DD",
     "DD-MM-YY",
-    "DD-MM-YYYY"
+    "DD-MM-YYYY",
+    "DD/MM/YY",
+    "DD/MM/YYYY"
 }
 local dateValues = {
     "%d.%m.%y",
@@ -67,7 +71,9 @@ local dateValues = {
     "%y-%m-%d",
     "%Y-%m-%d",
     "%d-%m-%y",
-    "%d-%m-%Y"
+    "%d-%m-%Y",
+    "%d/%m/%y",
+    "%d/%m/%Y"
 }
 local dateTooltips = {
     "31.03.21",
@@ -77,7 +83,9 @@ local dateTooltips = {
     "21-31-03",
     "2021-31-03",
     "31-03-21",
-    "31-03-2021"
+    "31-03-2021",
+    "31/03/21",
+    "31/03/2021"
 }
 -----------------
 --OnAddonLoaded--
@@ -92,7 +100,7 @@ end
 --Methods--
 -----------
 
-function BackupNotes(guildId)
+function GW.BackupNotes(guildId)
     -- local numGuilds = GetNumGuilds()
 
     -- local name = GetGuildName(GetGuildId(guildId))
@@ -136,7 +144,7 @@ local function GetGuilds()
         local link = GW.CreateGuildLink(id)
 
         local guildDefaults = {
-            ["messageBody"] = "Welcome to %PLAYER% to %GUILD% do we get cake?",
+            ["messageBody"] = "Welcome %PLAYER% to %GUILD% do we get cake?",
             ["mailBody"] = "I am very happy to welcome you to my guild %PLAYER%\n cakes are to be deposited in our guildbank <3",
             ["mailEnabled"] = false,
             ["mailSubject"] = "Welcome to %GUILD%",
@@ -149,7 +157,6 @@ local function GetGuilds()
             ["noteAlert"] = true,
             ["applicationAlert"] = true
         }
-
         -- d("2")
         --*Setup settings
         if not st.guilds[id] then
@@ -216,15 +223,24 @@ local function OnMemberJoin(_, guildId, playerName)
             local eformat = string.gsub(formattedMessage, "%%GUILD%%", guildName)
             local fformat = string.gsub(eformat, "%%DATE%%", date)
 
-            if index ~= nil then
-                if st.generalSettings.offlinecheck == false then
-                    StartChatInput(fformat, _G["CHAT_CHANNEL_GUILD_" .. gIndex])
-                end
-                if st.generalSettings.offlinecheck == true then
-                    if status ~= PLAYER_STATUS_OFFLINE then
-                        StartChatInput(fformat, _G["CHAT_CHANNEL_GUILD_" .. gIndex])
-                    else
-                        chat:Print("|cffffff" .. ZO_LinkHandler_CreateDisplayNameLink(playerName) .. "|r is offline")
+            if IsChatSystemAvailableForCurrentPlatform() == true and GW.ChatReady == true then
+                if index ~= nil then
+                    if st.generalSettings.offlinecheck == false then
+                        if ZO_ChatSystem then
+                            if CanWriteGuildChannel(_G["CHAT_CHANNEL_GUILD_" .. gIndex]) == true then
+                                StartChatInput(fformat, _G["CHAT_CHANNEL_GUILD_" .. gIndex])
+                            end
+                        end
+                    end
+
+                    if st.generalSettings.offlinecheck == true then
+                        if status ~= PLAYER_STATUS_OFFLINE then
+                            if CanWriteGuildChannel(_G["CHAT_CHANNEL_GUILD_" .. gIndex]) == true then
+                                StartChatInput(fformat, _G["CHAT_CHANNEL_GUILD_" .. gIndex])
+                            end
+                        else
+                            chat:Print("|cffffff" .. ZO_LinkHandler_CreateDisplayNameLink(playerName) .. "|r is offline")
+                        end
                     end
                 end
             end
@@ -247,11 +263,11 @@ local function OnMemberJoin(_, guildId, playerName)
                     end
                 end
                 if name == playerName then
-                    writeNote(guildId, index, fm)
+                    GW.writeNote(guildId, index, fm)
                 end
             else
                 if name == playerName then
-                    writeNote(guildId, index, GWData[worldName].guilds.savedNotes[guildId][playerName])
+                    GW.writeNote(guildId, index, GWData[worldName].guilds.savedNotes[guildId][playerName])
                 end
             end
         end
@@ -274,7 +290,7 @@ local function OnMemberJoin(_, guildId, playerName)
             -- local astody = mBody .. GWad
 
             if name == playerName then
-                writeMail(playerName, msubject, mbody)
+                GW.writeMail(playerName, msubject, mbody)
             end
         end
     end
@@ -356,6 +372,7 @@ local function RetrieveSpecificNote(guildId, playerName)
         SetGuildMemberNote(guildId, memberIndex, GWData[worldName].guilds.savedNotes[guildId][playerName])
     end
 end
+
 local function AddPlayerContextMenuEntry(playerName, rawName)
     numGuilds = GetNumGuilds()
 
@@ -461,7 +478,7 @@ function GW.RosterRow()
             key = "GW_Notes",
             disabled = false,
             width = 24,
-            -- guildFilter = {525912},
+            -- guildFilter = {525912}, needs to be in player activated
             header = {
                 title = "",
                 align = TEXT_ALIGN_CENTER,
@@ -517,16 +534,34 @@ end
 ----------------
 --LAM Settings--
 ----------------
+local function makeITTDescription()
+    local ITTDTitle = WINDOW_MANAGER:CreateControl("ITTsGhostwriterSettingsLogoTitle", ITTs_GhostwriterSettingsLogo, CT_LABEL)
+    ITTDTitle:SetFont("$(BOLD_FONT)|$(KB_18)|soft-shadow-thin")
+    ITTDTitle:SetText("|Cfcba03INDEPENDENT TRADING TEAM")
+    ITTDTitle:SetDimensions(240, 31)
+    ITTDTitle:SetHorizontalAlignment(1)
+    ITTDTitle:SetAnchor(TOP, ITTs_GhostWriterSettingsLogo, BOTTOM, 0, 40)
 
+    local ITTDLabel = WINDOW_MANAGER:CreateControl("ITTsGhostwriterSettingsLogoTitleServer", ITTsGhostwriterSettingsLogoTitle, CT_LABEL)
+    ITTDLabel:SetFont("$(MEDIUM_FONT)|$(KB_16)|soft-shadow-thick")
+    ITTDLabel:SetText("|C646464PC EU")
+    ITTDLabel:SetDimensions(240, 21)
+    ITTDLabel:SetHorizontalAlignment(1)
+    ITTDLabel:SetAnchor(TOP, ITTsGhostwriterSettingsLogoTitle, BOTTOM, 0, -5)
+
+    ITT_HideMePlsGW:SetHidden(true)
+end
 -- TODO: change one saves for all of them?
 --! its all fucked ¯\_(ツ)_/¯
 --*update not fucked anymore thank you siri :D
 function GW.CreateSettingsWindow()
     id = {}
+    local _desc = true
     local text = {}
     local selectedGuildId = guildTableValues[1]
     local selectedDateFormat = dateValues[1]
     local color = GW.GetGuildColor(1)
+
     local panelData = {
         type = "panel",
         name = "ITT's |c" .. GW_COLOR .. "Ghostwriter|r",
@@ -752,10 +787,7 @@ function GW.CreateSettingsWindow()
                     name = "Note Enabled",
                     default = false,
                     disabled = function()
-                        if
-                            GW.GetPermission_Note(st.selectedGuild) == true or GW.GetPermission_Mail(st.selectedGuild) == true or
-                                GW.GetPermission_Chat(st.selectedGuild) == true
-                         then
+                        if GW.GetPermission_Note(st.selectedGuild) == true then
                             return false
                         else
                             return true
@@ -909,6 +941,7 @@ function GW.CreateSettingsWindow()
         [7] = {
             type = "submenu",
             name = "Changelog",
+            icon = "ITTsGhostwriter/itt-logo.dds",
             controls = {
                 [1] = {
                     type = "description",
@@ -932,7 +965,25 @@ function GW.CreateSettingsWindow()
             image = "ITTsGhostwriter/itt-logo.dds",
             imageWidth = "192",
             imageHeight = "192",
-            reference = "GhostWriterITTSettingsLogo"
+            reference = "ITTs_GhostwriterSettingsLogo"
+        },
+        [11] = {
+            type = "checkbox",
+            name = "HideMePls",
+            getFunc = function()
+                if ITTs_GhostwriterSettingsLogo ~= nil and _desc then
+                    makeITTDescription()
+                    _desc = false
+                end
+
+                return false
+            end,
+            setFunc = function(value)
+                return false
+            end,
+            default = false,
+            disabled = true,
+            reference = "ITT_HideMePlsGW"
         }
     }
 
@@ -947,6 +998,7 @@ local function OnPlayerActivated()
     GW.SetupGuilds()
     firstLoad()
     GW.myGuildColumn:SetGuildFilter(GW.GuildsWithPermisson)
+    GW.ChatReady = true
 end
 
 ------------------------
@@ -958,6 +1010,7 @@ function GW.Initialize()
 
     HideBackupButton()
     EnableBackupButton()
+    d(type(ZO_ChatSystem))
     zo_callLater(
         function()
             GW.LoginAlert()
@@ -967,10 +1020,8 @@ function GW.Initialize()
 
     GW.RosterRow()
     ITTsGhostwriter.CreateSettingsWindow()
-
-    EVENT_MANAGER:RegisterForEvent(GW.name, EVENT_GUILD_MEMBER_ADDED, OnMemberJoin)
-
     EVENT_MANAGER:UnregisterForEvent(GW.name, EVENT_ADD_ON_LOADED)
+    EVENT_MANAGER:RegisterForEvent(GW.name, EVENT_GUILD_MEMBER_ADDED, OnMemberJoin)
 end
 ----------
 --Events--
