@@ -2,7 +2,7 @@ local GW =
     ITTsGhostwriter or
     {
         name = "ITTsGhostwriter",
-        version = 0.7,
+        version = 1.0,
         variableVersion = 194
     }
 ITTsGhostwriter = GW
@@ -58,9 +58,10 @@ end
 function GW.HandleClickEvent(rawLink, mouseButton, linkText, linkStyle, linkType, guildId, ...)
     local gIndex = GW.GetGuildIndex(guildId)
     if linkType == "gwguild" then
-        GUILD_SELECTOR:SelectGuildByIndex(gIndex)
+        -- GUILD_SELECTOR:SelectGuildByIndex(gIndex)
         -- MAIN_MENU_KEYBOARD:ShowScene("guildHome")
         if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
+            GUILD_SELECTOR:SelectGuildByIndex(gIndex)
             MAIN_MENU_KEYBOARD:ShowScene("guildHome")
 
             return true
@@ -74,6 +75,7 @@ function GW.HandleClickEvent(rawLink, mouseButton, linkText, linkStyle, linkType
                 200
             ) ]]
             if DoesPlayerHaveGuildPermission(guildId, GUILD_PERMISSION_MANAGE_APPLICATIONS) == true then
+                GUILD_SELECTOR:SelectGuildByIndex(gIndex)
                 MAIN_MENU_KEYBOARD:ShowScene("guildRecruitmentKeyboard")
                 -- MAIN_MENU_KEYBOARD:ToggleSceneGroup("guildsSceneGroup", "guildRecruitmentKeyboard")
                 zo_callLater(
@@ -99,6 +101,7 @@ function GW.HandleClickEvent(rawLink, mouseButton, linkText, linkStyle, linkType
             AddCustomMenuItem(
                 "Show Guild Roster",
                 function()
+                    GUILD_SELECTOR:SelectGuildByIndex(gIndex)
                     MAIN_MENU_KEYBOARD:ShowScene("guildRoster")
                     --[[ zo_callLater(
                         function()
@@ -111,6 +114,7 @@ function GW.HandleClickEvent(rawLink, mouseButton, linkText, linkStyle, linkType
             AddCustomMenuItem(
                 "Show Guild Ranks",
                 function()
+                    GUILD_SELECTOR:SelectGuildByIndex(gIndex)
                     MAIN_MENU_KEYBOARD:ShowScene("guildRanks")
                     --[[ zo_callLater(
                         function()
@@ -124,6 +128,7 @@ function GW.HandleClickEvent(rawLink, mouseButton, linkText, linkStyle, linkType
                 AddCustomMenuItem(
                     "Show Guild Recruitment",
                     function()
+                        GUILD_SELECTOR:SelectGuildByIndex(gIndex)
                         MAIN_MENU_KEYBOARD:ShowScene("guildRecruitmentKeyboard")
                         --[[ zo_callLater(
                         function()
@@ -138,6 +143,7 @@ function GW.HandleClickEvent(rawLink, mouseButton, linkText, linkStyle, linkType
                 AddCustomMenuItem(
                     "Show Guild Heraldry",
                     function()
+                        GUILD_SELECTOR:SelectGuildByIndex(gIndex)
                         MAIN_MENU_KEYBOARD:ShowScene("guildHeraldry")
                         --[[ zo_callLater(
                         function()
@@ -151,6 +157,7 @@ function GW.HandleClickEvent(rawLink, mouseButton, linkText, linkStyle, linkType
             AddCustomMenuItem(
                 "Show Guild History",
                 function()
+                    GUILD_SELECTOR:SelectGuildByIndex(gIndex)
                     MAIN_MENU_KEYBOARD:ShowScene("guildHistory")
                     --[[ zo_callLater(
                         function()
