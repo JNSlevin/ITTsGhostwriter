@@ -45,6 +45,7 @@ These settings include:
 - Enabling to check for the time people are offline upon joining the guild 
   * The maximum amount of time an application is active is 15 days, so when people are offline for longer than 14 days it will include an offlinemode warning in the note
   * Enabling or disabling a button in the guildroster to backup notes in the selected guild!
+- Enabling the backup button in the Guildroster!
 
 #### Guildspecific
 ##### First choose the guild you would like to change the settings for!
@@ -57,8 +58,8 @@ These settings include:
   - Set the template
 - Enable the Mail
   - Set both templates
+- Preview the Mail
 ##### Backup options
-- Backup the notes in the currently selected guilds
 - Automatically backup notes upon 
   * Login
   * Reload UI
@@ -76,8 +77,8 @@ Any of the system messages which include a specific guild will have a link for t
 * The color you chose in the vanilla settings for each guild
 * clicking the link will result in:
    - Leftclick = opening the guild home
-   - Rightlick = 
-    - Middleclick (the mousewheel) = opening the applications window
+   - Rightlick = opening a context menu in which you can choose which part of the guildmenu you want to open!
+   - Middleclick (the mousewheel) = opening the applications window (if you do not have the manage applications permission it will show the guildroster!
         
         
 #### Alerts
@@ -86,7 +87,6 @@ Will post a message in your system chat when:
 * A note is changed
 * A new application arrives 
    - will include the number of applications + how many are empty + how many are above in the threshhold you set in the settings
-* A mail was sent or was not sent.
     
     
 #### Context Menus
