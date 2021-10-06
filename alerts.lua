@@ -2,7 +2,7 @@ local GW =
     ITTsGhostwriter or
     {
         name = "ITTsGhostwriter",
-        version = 0.7,
+        version = 1.0,
         variableVersion = 194
     }
 ITTsGhostwriter = GW
