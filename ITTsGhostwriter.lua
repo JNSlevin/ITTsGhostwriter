@@ -2,7 +2,7 @@ local GW =
     ITTsGhostwriter or
     {
         name = "ITTsGhostwriter",
-        version = 0.7,
+        version = 1.0,
         variableVersion = 194
     }
 ITTsGhostwriter = GW
@@ -158,6 +158,7 @@ local function GetGuilds()
             ["applicationAlert"] = true
         }
         -- d("2")
+       
         --*Setup settings
         if not st.guilds[id] then
             st.guilds[id] = {}
@@ -503,10 +504,14 @@ function GW.RosterRow()
                                 end
                             end
                         elseif note == "" then
-                            if GWData[worldName].guilds.savedNotes[guildId][data.displayName] ~= "" then
-                                return "|cFF0000|t24:24:esoui/art/miscellaneous/check_icon_32.dds:inheritcolor|t|r"
-                            elseif GWData[worldName].guilds.savedNotes[guildId][data.displayName] == "" then
+                            if GWData[worldName].guilds.savedNotes[guildId][data.displayName] == nil then
                                 return ""
+                            else
+                                if GWData[worldName].guilds.savedNotes[guildId][data.displayName] ~= "" then
+                                    return "|cFF0000|t24:24:esoui/art/miscellaneous/check_icon_32.dds:inheritcolor|t|r"
+                                elseif GWData[worldName].guilds.savedNotes[guildId][data.displayName] == "" then
+                                    return ""
+                                end
                             end
                         else
                             return ""
@@ -534,6 +539,10 @@ end
 ----------------
 --LAM Settings--
 ----------------
+
+local function MailPreview()
+    return st.guilds[st.selectedGuild].settings.mailBody
+end
 local function makeITTDescription()
     local ITTDTitle = WINDOW_MANAGER:CreateControl("ITTsGhostwriterSettingsLogoTitle", ITTs_GhostwriterSettingsLogo, CT_LABEL)
     ITTDTitle:SetFont("$(BOLD_FONT)|$(KB_18)|soft-shadow-thin")
@@ -566,7 +575,7 @@ function GW.CreateSettingsWindow()
         type = "panel",
         name = "ITT's |c" .. GW_COLOR .. "Ghostwriter|r",
         author = "JN Slevin",
-        version = GW.version,
+        version = tostring(GW.version),
         registerForRefresh = true,
         registerForDefaults = false,
         website = "https://github.com/JNSlevin/ITTs-Ghostwriter"
@@ -584,10 +593,19 @@ function GW.CreateSettingsWindow()
             title = "Setup |c" .. GW_COLOR .. "Ghostwriter|r",
             text = "Please visit the Website (linked in the description). \n\n|cff0000The addon will not work and all guilds pecific settings will be disabled without setup!",
             enableLinks = true,
-            helpUrl = "https://www.esoui.com",
             width = "full" --or "half" (optional)
         },
         [3] = {
+            type = "texture",
+            image = "/esoui/art/guild/sectiondivider_left.dds",
+            imageWidth = 510, --max of 250 for half width, 510 for full
+            imageHeight = 5 --max of 100
+        },
+        [4] = {
+            type = "header",
+            name = "General Settings"
+        },
+        [5] = {
             type = "checkbox",
             name = "Check for online status",
             default = false,
@@ -602,7 +620,7 @@ function GW.CreateSettingsWindow()
             end,
             d
         },
-        [4] = {
+        [6] = {
             type = "checkbox",
             name = "Include offline mode check",
             default = false,
@@ -617,7 +635,7 @@ function GW.CreateSettingsWindow()
             end,
             d
         },
-        [5] = {
+        [7] = {
             type = "checkbox",
             name = "Enable backup button in Guildroster",
             default = false,
@@ -635,10 +653,10 @@ function GW.CreateSettingsWindow()
                 EnableBackupButton()
             end
         },
-        [6] = {
+        [8] = {
             type = "submenu",
             name = "Guild Settings",
-            icon = "/esoui/art/journal/gamepad/gp_questtypeicon_guild.dds",
+            icon = "/esoui/art/tutorial/guildhistory_indexicon_guild_up.dds",
             controls = {
                 [1] = {
                     type = "description",
@@ -758,7 +776,7 @@ function GW.CreateSettingsWindow()
                 },
                 [7] = {
                     type = "texture",
-                    image = "/esoui/art/guild/sectiondivider_left.ddss",
+                    image = "/esoui/art/campaign/campaignbrowser_listdivider_right.dds",
                     imageWidth = 510, --max of 250 for half width, 510 for full
                     imageHeight = 5 --max of 100
                 },
@@ -805,9 +823,10 @@ function GW.CreateSettingsWindow()
                 [10] = {
                     type = "editbox",
                     name = "ChatMessage",
-                    tooltip = "This message will be pasted in your chat!",
+                    tooltip = "This message will be pasted in your chat!\n\nMaximum is " .. MAX_TEXT_CHAT_INPUT_CHARACTERS .. " Characters!",
                     isExtraWide = true,
                     isMultiline = true,
+                    maxChars = MAX_TEXT_CHAT_INPUT_CHARACTERS,
                     disabled = function()
                         if GW.GetPermission_Chat(st.selectedGuild) == true then
                             return false
@@ -826,7 +845,7 @@ function GW.CreateSettingsWindow()
                 [11] = {
                     type = "editbox",
                     name = "Note Template",
-                    tooltip = "This is the note you will set once a new member joins",
+                    tooltip = "This is the note you will set once a new member joins\n\nMaximum is 256 Characters!",
                     width = "half",
                     isExtraWide = true,
                     isMultiline = true,
@@ -846,6 +865,12 @@ function GW.CreateSettingsWindow()
                     end
                 },
                 [12] = {
+                    type = "texture",
+                    image = "/esoui/art/campaign/campaignbrowser_listdivider_right.dds",
+                    imageWidth = 510, --max of 250 for half width, 510 for full
+                    imageHeight = 5 --max of 100
+                },
+                [13] = {
                     type = "checkbox",
                     name = "Mail Enabled",
                     default = false,
@@ -865,12 +890,13 @@ function GW.CreateSettingsWindow()
                         st.guilds[st.selectedGuild].settings.mailEnabled = value
                     end
                 },
-                [13] = {
+                [14] = {
                     type = "editbox",
                     name = "MailSubject",
-                    tooltip = "This is the subject of the mail",
+                    tooltip = "This is the subject of the mail\n\nMaximum is " .. MAIL_MAX_SUBJECT_CHARACTERS .. " Characters",
                     isExtraWide = true,
                     isMultiline = false,
+                    reference = "GW_SubjectWindow",
                     maxChars = MAIL_MAX_SUBJECT_CHARACTERS,
                     disabled = function()
                         if GW.GetPermission_Mail(st.selectedGuild) == true then
@@ -886,12 +912,13 @@ function GW.CreateSettingsWindow()
                         st.guilds[st.selectedGuild].settings.mailSubject = text
                     end
                 },
-                [14] = {
+                [15] = {
                     type = "editbox",
                     name = "MailBody",
-                    tooltip = "This is the mail",
+                    tooltip = "This is the mail!\n\nMaximum is " .. MAIL_MAX_BODY_CHARACTERS .. " Characters!",
                     isExtraWide = true,
                     isMultiline = true,
+                    reference = "ITTGW_LAM_Editbox_MailText",
                     maxChars = MAIL_MAX_BODY_CHARACTERS,
                     disabled = function()
                         if GW.GetPermission_Mail(st.selectedGuild) == true then
@@ -904,12 +931,32 @@ function GW.CreateSettingsWindow()
                         return st.guilds[st.selectedGuild].settings.mailBody
                     end,
                     setFunc = function(text)
+                        MailPreview()
                         st.guilds[st.selectedGuild].settings.mailBody = text
                     end
                 },
-                [15] = {
+                [16] = {
+                    type = "description",
+                    title = "",
+                    text = [[ ]]
+                },
+                [17] = {
+                    type = "submenu",
+                    name = "Mail Preview",
+                    icon = "/esoui/art/miscellaneous/search_icon.dds",
+                    reference = "GW_MailPreview",
+                    controls = {
+                        [1] = {
+                            type = "description",
+                            title = "",
+                            text = MailPreview
+                        }
+                    }
+                },
+                [18] = {
                     type = "submenu",
                     name = "|cffffffBackup options",
+                    reference = "GW_BackupOptions",
                     disabled = function()
                         if GW.GetPermission_Note(st.selectedGuild) == true then
                             return false
@@ -938,10 +985,10 @@ function GW.CreateSettingsWindow()
                 }
             }
         },
-        [7] = {
+        [9] = {
             type = "submenu",
             name = "Changelog",
-            icon = "ITTsGhostwriter/itt-logo.dds",
+            icon = "/esoui/art/help/help_tabicon_feedback_up.dds",
             controls = {
                 [1] = {
                     type = "description",
@@ -950,24 +997,24 @@ function GW.CreateSettingsWindow()
                 }
             }
         },
-        [8] = {
-            type = "description",
-            title = "",
-            text = [[ ]]
-        },
-        [9] = {
-            type = "description",
-            title = "",
-            text = [[ ]]
-        },
         [10] = {
+            type = "description",
+            title = "",
+            text = [[ ]]
+        },
+        [11] = {
+            type = "description",
+            title = "",
+            text = [[ ]]
+        },
+        [12] = {
             type = "texture",
             image = "ITTsGhostwriter/itt-logo.dds",
             imageWidth = "192",
             imageHeight = "192",
             reference = "ITTs_GhostwriterSettingsLogo"
         },
-        [11] = {
+        [13] = {
             type = "checkbox",
             name = "HideMePls",
             getFunc = function()
@@ -1010,7 +1057,7 @@ function GW.Initialize()
 
     HideBackupButton()
     EnableBackupButton()
-    d(type(ZO_ChatSystem))
+    
     zo_callLater(
         function()
             GW.LoginAlert()
