@@ -8,7 +8,7 @@ local GW =
 ITTsGhostwriter = GW
 
 local chat = LibChatMessage("ITTsGhostwriter", "GW") -- long and short tag to identify who is printing the message
-local chat = chat:SetTagColor(GW_COLOR)
+-- local chat = chat:SetTagColor(GW.COLOR)
 -- ITTsGhostwriter = {}
 
 local displayName = GetDisplayName()
