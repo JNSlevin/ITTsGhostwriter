@@ -9,7 +9,7 @@ ITTsGhostwriter = GW
 
 local worldName = GetWorldName()
 local chat = LibChatMessage("ITTsGhostwriter", "GW")
-local chat = chat:SetTagColor(GW_COLOR)
+-- local chat = chat:SetTagColor(GW.COLOR)
 -----------
 --CONSTANTS
 -----------
@@ -21,8 +21,8 @@ local NOTE_AND_MAIL_PATTERN = "|cGWnoma|r"
 local NOTE_AND_CHAT_PATTERN = "|cGWnoch|r"
 local MAIL_AND_CHAT_PATTERN = "|cGWmach|r"
 local NOTE_MAIL_AND_CHAT_PATTERN = "|cGWxxxx|r"
-
-GW.GuildsWithPermisson = {999999999999999} -- LibGuildRoster needs one guildId to filter, if its nil it will show in all guilds
+--* LibGuildRoster needs one guildId to filter, if its nil it will show in all guilds, so the dummy guildId is added with a number that will most likely never be used by an actual guild
+GW.GuildsWithPermisson = {999999999999999}
 GW.shouldHideFor = {}
 
 ------------------
@@ -39,10 +39,10 @@ function GW.GetGuildColor(i)
     }
 end
 function GW.CreateGuildLink(guildId)
-    alliance = GetGuildAlliance(guildId)
-    gIndex = GW.GetGuildIndex(guildId)
-    name = GetGuildName(guildId)
-    color = GW.GetGuildColor(gIndex)
+    -- local alliance = GetGuildAlliance(guildId)
+    local gIndex = GW.GetGuildIndex(guildId)
+    local name = GetGuildName(guildId)
+    local color = GW.GetGuildColor(gIndex)
     --[[ allianceIcon = {}
     if alliance == 1 then
         allianceIcon = "|t24:24:/esoui/art/journal/gamepad/gp_questtypeicon_guild.dds|t"
@@ -51,7 +51,7 @@ function GW.CreateGuildLink(guildId)
     elseif alliance == 3 then
         allianceIcon = "|t24:24:/esoui/art/guild/guildhistory_indexicon_guild_down.dds|t"
     end ]]
-    guildLink = "|c" .. color.hex .. "[|H1:gwguild::" .. guildId .. "|h " .. name .. " ]|h|r"
+    local guildLink = "|c" .. color.hex .. "[|H1:gwguild::" .. guildId .. "|h " .. name .. " ]|h|r"
 
     return guildLink
 end
@@ -241,17 +241,7 @@ function GW.GetPermission_Mail(guildId)
         end
     end
 end
-function GuildPermissions(guildId)
-    if
-        DoesPlayerHaveGuildPermission(guildId, "GUILD_PERMISSION_GUILD_PERMISSION_BANK_WITHDRAW_GOLD") and
-            DoesPlayerHaveGuildPermission(guildId, "GUILD_PERMISSION_OFFICER_CHAT_WRITE") and
-            DoesPlayerHaveGuildPermission(guildID, "GUILD_PERMISSION_DESCRIPTION_EDIT")
-     then
-        return true
-    else
-        return false
-    end
-end
+
 --[[ function writePermissionNote(guildId, playerName, perm)
     local index = GetGuildMemberIndexFromDisplayName(guildId, playerName)
     local name, note, rankIndex, _, _ = GetGuildMemberInfo(guildId, index)
