@@ -71,7 +71,7 @@ These settings include:
 Basically as i have written this addon i had a bunch of ideas which i thought would be helpful
 
 #### Guildroster Column
-Will indicate if a note is saved (green), if a note is not saved yet (grey), if a different note is saved by the addon (orange) and if a note is saved by the addon but not saved in the roster notes.
+Will indicate if a note is saved (green), if a note is not saved yet (grey), if a different note is saved by the addon (orange) or if a note is saved by the addon but not saved in the roster notes (red).
 
 
 #### GuildLinks
