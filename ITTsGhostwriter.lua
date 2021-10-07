@@ -6,17 +6,14 @@ local GW =
         variableVersion = 194
     }
 ITTsGhostwriter = GW
+GW.COLOR = "CCA21A"
 --------
 --Libs--
 --------
 local LAM = LibAddonMenu2
 local libCM = LibCustomMenu
-local libDialog = LibDialog
 local chat = LibChatMessage("ITTsGhostwriter", "GW") -- long and short tag to identify who is printing the message
-local chat = chat:SetTagColor(GW_COLOR)
-local GW_COLOR = "CCA21A"
-local guildRosterScene = SCENE_MANAGER:GetScene("guildRoster")
-local fragment = ZO_SimpleSceneFragment:New(window)
+-- local chat = chat:SetTagColor(GW.COLOR)
 
 -------------
 -- Defaults--
@@ -39,15 +36,13 @@ local dataDefaults = {}
 -------------
 
 local guildName = GetGuildName()
-local GWadvertisement = ("\n\n\nSent via |cffffffITT's|c" .. GW_COLOR .. "Ghostwriter|r")
-local guildIds = {}
-local settingsTable = {}
+local GWadvertisement = ("\n\n\nSent via |cffffffITT's|c" .. GW.COLOR .. "Ghostwriter|r")
+
 local worldName = GetWorldName()
 local st = {}
 local db = {}
 local id = {}
-local rankTable = {}
-local rankTableValue = {}
+
 local guildTable = {}
 local guildTableValues = {}
 GW.ChatReady = false
@@ -117,6 +112,7 @@ function GW.BackupNotes(guildId)
         if not GWData[worldName].guilds.savedNotes then
             GWData[worldName].guilds.savedNotes = {}
         end
+
         if not GWData[worldName].guilds.savedNotes[guildId] then
             GWData[worldName].guilds.savedNotes[guildId] = {}
         end
@@ -132,6 +128,7 @@ function GW.BackupNotes(guildId)
     LibGuildRoster:Refresh()
 end
 --! Setup guilds
+
 local function GetGuilds()
     local numGuilds = GetNumGuilds()
 
@@ -158,7 +155,7 @@ local function GetGuilds()
             ["applicationAlert"] = true
         }
         -- d("2")
-       
+
         --*Setup settings
         if not st.guilds[id] then
             st.guilds[id] = {}
@@ -204,7 +201,7 @@ local function GetGuilds()
 end
 local function OnMemberJoin(_, guildId, playerName)
     local guildName = GetGuildName(guildId)
-    local guilds = st.guilds[guildId]
+    -- local guilds = st.guilds[guildId]
     local date = os.date(st.guilds[guildId].settings.dateFormat)
     local index = GetGuildMemberIndexFromDisplayName(guildId, playerName)
     local name, _, _, status, offlinetime = GetGuildMemberInfo(guildId, index)
@@ -227,10 +224,8 @@ local function OnMemberJoin(_, guildId, playerName)
             if IsChatSystemAvailableForCurrentPlatform() == true and GW.ChatReady == true then
                 if index ~= nil then
                     if st.generalSettings.offlinecheck == false then
-                        if ZO_ChatSystem then
-                            if CanWriteGuildChannel(_G["CHAT_CHANNEL_GUILD_" .. gIndex]) == true then
-                                StartChatInput(fformat, _G["CHAT_CHANNEL_GUILD_" .. gIndex])
-                            end
+                        if CanWriteGuildChannel(_G["CHAT_CHANNEL_GUILD_" .. gIndex]) == true then
+                            StartChatInput(fformat, _G["CHAT_CHANNEL_GUILD_" .. gIndex])
                         end
                     end
 
@@ -295,24 +290,6 @@ local function OnMemberJoin(_, guildId, playerName)
             end
         end
     end
-    --[[ function MailFailed(_, reason)
-        if reason == MAIL_SEND_RESULT_FAIL_MAILBOX_FULL then
-            chat:Print("Inbox of |cffffff" .. ZO_LinkHandler_CreateDisplayNameLink(playerName) .. "|r is full")
-        end
-        if reason == MAIL_SEND_RESULT_MAIL_DISABLED then
-            chat:Print(
-                "Mailing is currently disabled on your account! Please check if you can access guildstores and/or banks, as well as if people get your whispers! If none of these things work you may have been |cff0000Socialbanned|r! Open a ticket to the ZOS support to remove it."
-            )
-        end
-        if reason == MAIL_SEND_RESULT_FAIL_IGNORED then
-            chat:Print("|cffffff" .. ZO_LinkHandler_CreateDisplayNameLink(playerName) .. "|r is ignoring you and is unable to receive mails from you.")
-        end
-    end
-    function MailSuccess()
-        chat:Print("Welcome mail sent to |cffffff" .. ZO_LinkHandler_CreateDisplayNameLink(playerName))
-    end
-    EVENT_MANAGER:RegisterForEvent(GW.name, EVENT_MAIL_SEND_FAILED, MailFailed)
-    EVENT_MANAGER:RegisterForEvent(GW.name, EVENT_MAIL_SEND_SUCCESS, MailSuccess) ]]
 end
 
 local function firstLoad()
@@ -375,17 +352,14 @@ local function RetrieveSpecificNote(guildId, playerName)
 end
 
 local function AddPlayerContextMenuEntry(playerName, rawName)
-    numGuilds = GetNumGuilds()
-
-    local guildId = GetGuildId(i)
-    local link = GW.CreateGuildLink(guildId)
+    local numGuilds = GetNumGuilds()
 
     local contextEntries = {}
 
     for i = 1, GetNumGuilds() do
         local guildId = GetGuildId(i)
         local link = GW.CreateGuildLink(guildId)
-        local color = GW.GetGuildColor(i)
+        -- local color = GW.GetGuildColor(i)
 
         local guildName = GetGuildName(guildId)
 
@@ -398,18 +372,14 @@ local function AddPlayerContextMenuEntry(playerName, rawName)
             visible = DoesPlayerHaveGuildPermission(guildId, GUILD_PERMISSION_INVITE)
         }
     end
-    AddCustomSubMenuItem("ITTs |c" .. GW_COLOR .. "Ghostwriter|r Invite to:", contextEntries)
+    AddCustomSubMenuItem("ITTs |c" .. GW.COLOR .. "Ghostwriter|r Invite to:", contextEntries)
 end
 libCM:RegisterPlayerContextMenu(AddPlayerContextMenuEntry, libCM.CATEGORY_LATE)
 local function AddGuildRosterMenuEntry(control, button, upInside)
     local data = ZO_ScrollList_GetData(control)
     local guildId = GUILD_ROSTER_MANAGER:GetGuildId()
-    local guildName = GUILD_ROSTER_MANAGER:GetGuildName()
-    local guildAlliance = GUILD_ROSTER_MANAGER:GetGuildAlliance()
-    if ITTDonationbot == true then
-
-    -- p = GUILD_ROSTER_KEYBOARD.GuildRosterRow_OnMouseUp
-    end
+    -- local guildName = GUILD_ROSTER_MANAGER:GetGuildName()
+    -- local guildAlliance = GUILD_ROSTER_MANAGER:GetGuildAlliance()
     -- local note = GetPermissionsFromMemberNote(guildId)
     -- local displayName = ZO_KeyboardGuildRosterRowDisplayName_OnMouseEnter()
     local entries = {
@@ -457,13 +427,8 @@ local function AddGuildRosterMenuEntry(control, button, upInside)
             --This only exists to add a seperator
         end
     )
-    if
-        GW.GetPermission_Note(guildId) == true or GW.GetPermission_Mail(guildId) == true or GW.GetPermission_Chat(guildId) == true --[[ or
-            st.guilds[guildId].settings.noteEnabled == true or
-            st.guilds[guildId].settings.mailEnabled == true or
-            st.guilds[guildId].settings.chatEnabled == true ]]
-     then
-        AddCustomSubMenuItem("ITTs |c" .. GW_COLOR .. "Ghostwriter|r", entries)
+    if GW.GetPermission_Note(guildId) == true or GW.GetPermission_Mail(guildId) == true or GW.GetPermission_Chat(guildId) == true then
+        AddCustomSubMenuItem("ITTs |c" .. GW.COLOR .. "Ghostwriter|r", entries)
     end
 end
 
@@ -543,6 +508,9 @@ end
 local function MailPreview()
     return st.guilds[st.selectedGuild].settings.mailBody
 end
+local function NotePreview()
+    return st.guilds[st.selectedGuild].settings.mail.noteBody
+end
 local function makeITTDescription()
     local ITTDTitle = WINDOW_MANAGER:CreateControl("ITTsGhostwriterSettingsLogoTitle", ITTs_GhostwriterSettingsLogo, CT_LABEL)
     ITTDTitle:SetFont("$(BOLD_FONT)|$(KB_18)|soft-shadow-thin")
@@ -560,6 +528,28 @@ local function makeITTDescription()
 
     ITT_HideMePlsGW:SetHidden(true)
 end
+
+--* Call function after Menu has been created to prevent using the getFunc
+local lamPanelCreationInitDone = false
+local function LAMControlsCreatedCallbackFunc(pPanel)
+    -- d("hello2")
+    if pPanel ~= GW.GWSettingsPanel then
+        return
+    end
+    if lamPanelCreationInitDone == true then
+        return
+    end
+    --Do stuff here
+    -- d("hello")
+
+    --! Works but Map Pins will break the menu *sadpanda*
+    --[[ ITTGW_LAM_Editbox_MailText:SetHeight(550)
+    ITTGW_LAM_Editbox_MailText.container:SetHeight(550)
+    ITTGW_LAM_Editbox_MailText.label:SetAnchor(TOPLEFT, control, TOPLEFT, 0, 0)
+    ITTGW_LAM_Editbox_MailText.container:SetAnchor(BOTTOMRIGHT, control, BOTTOMRIGHT, 0, 25) ]]
+    makeITTDescription()
+    lamPanelCreationInitDone = true
+end
 -- TODO: change one saves for all of them?
 --! its all fucked ¯\_(ツ)_/¯
 --*update not fucked anymore thank you siri :D
@@ -570,27 +560,39 @@ function GW.CreateSettingsWindow()
     local selectedGuildId = guildTableValues[1]
     local selectedDateFormat = dateValues[1]
     local color = GW.GetGuildColor(1)
+    GW.GWSettingsPanel =
+        LAM:RegisterAddonPanel(
+        "GhostwriterOptions",
+        {
+            type = "panel",
+            name = "ITT's |c" .. GW.COLOR .. "Ghostwriter|r",
+            author = "JN Slevin",
+            version = tostring(GW.version),
+            registerForRefresh = true,
+            registerForDefaults = false,
+            website = "https://github.com/JNSlevin/ITTs-Ghostwriter"
+        }
+    )
 
-    local panelData = {
+    --[[  local panelData = {
         type = "panel",
-        name = "ITT's |c" .. GW_COLOR .. "Ghostwriter|r",
+        name = "ITT's |c" .. GW.COLOR .. "Ghostwriter|r",
         author = "JN Slevin",
         version = tostring(GW.version),
         registerForRefresh = true,
         registerForDefaults = false,
         website = "https://github.com/JNSlevin/ITTs-Ghostwriter"
-    }
-
-    LAM:RegisterAddonPanel("GhostwriterOptions", panelData)
+    } ]]
+    -- LAM:RegisterAddonPanel("GhostwriterOptions", panelData)
 
     local optionsData = {
         [1] = {
             type = "header",
-            name = "|c" .. GW_COLOR .. "Ghostwriter|r Settings"
+            name = "|c" .. GW.COLOR .. "Ghostwriter|r Settings"
         },
         [2] = {
             type = "description",
-            title = "Setup |c" .. GW_COLOR .. "Ghostwriter|r",
+            title = "Setup |c" .. GW.COLOR .. "Ghostwriter|r",
             text = "Please visit the Website (linked in the description). \n\n|cff0000The addon will not work and all guilds pecific settings will be disabled without setup!",
             enableLinks = true,
             width = "full" --or "half" (optional)
@@ -663,11 +665,11 @@ function GW.CreateSettingsWindow()
                     --title = "My Title",	--(optional)
                     title = nil, --(optional)
                     text = "Here you can edit the settings for each guild! First choose the guild in the dropdown below, then edit the templates or turn settings on / off!\n\nThe current placeholders are: \n|c" ..
-                        GW_COLOR ..
+                        GW.COLOR ..
                             "%DATE%|r\t-\twill be replaced by the current date (in the format you chose below)!\n|c" ..
-                                GW_COLOR ..
+                                GW.COLOR ..
                                     "%PLAYER%|r\t-\twill be replaced by the account name of the player!\n|c" ..
-                                        GW_COLOR .. "%GUILD%|r\t-\twill be replaced by the guilds name!",
+                                        GW.COLOR .. "%GUILD%|r\t-\twill be replaced by the guilds name!",
                     width = "full" --or "half" (optional)
                 },
                 [2] = {
@@ -861,6 +863,7 @@ function GW.CreateSettingsWindow()
                         return st.guilds[st.selectedGuild].settings.noteBody
                     end,
                     setFunc = function(text)
+                        NotePreview()
                         st.guilds[st.selectedGuild].settings.noteBody = text
                     end
                 },
@@ -1018,11 +1021,6 @@ function GW.CreateSettingsWindow()
             type = "checkbox",
             name = "HideMePls",
             getFunc = function()
-                if ITTs_GhostwriterSettingsLogo ~= nil and _desc then
-                    makeITTDescription()
-                    _desc = false
-                end
-
                 return false
             end,
             setFunc = function(value)
@@ -1033,7 +1031,7 @@ function GW.CreateSettingsWindow()
             reference = "ITT_HideMePlsGW"
         }
     }
-
+    CALLBACK_MANAGER:RegisterCallback("LAM-PanelControlsCreated", LAMControlsCreatedCallbackFunc)
     LAM:RegisterOptionControls("GhostwriterOptions", optionsData)
 end
 
@@ -1057,7 +1055,7 @@ function GW.Initialize()
 
     HideBackupButton()
     EnableBackupButton()
-    
+
     zo_callLater(
         function()
             GW.LoginAlert()
