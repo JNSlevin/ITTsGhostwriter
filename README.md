@@ -50,8 +50,10 @@ These settings include:
 #### Guildspecific
 ##### First choose the guild you would like to change the settings for!
 - Choose the date format for the date replacement
-- Set an application threshhold 
+- Set an application CP threshold 
   *most guilds will get a ton of empty applications, so some of them have a threshold of champion points where they accept the applicant anyway
+- Set an application achievement point threshold
+
 - Enable the chatmessage
   - Set the template
 - Enable the note 
@@ -89,7 +91,7 @@ Any of the system messages which include a specific guild will have a link for t
 Will post a message in your system chat when:
 * A note is changed
 * A new application arrives 
-   - will include the number of applications + how many are empty + how many are above in the threshhold you set in the settings
+   - will include the number of applications + how many are empty + how many are above in the threshold you set in the settings for CP and achievement points
     
     
 #### Context Menus
