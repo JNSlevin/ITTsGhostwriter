@@ -2,7 +2,7 @@ local GW =
     ITTsGhostwriter or
     {
         name = "ITTsGhostwriter",
-        version = 1.0,
+        version = 1.3,
         variableVersion = 194
     }
 ITTsGhostwriter = GW
@@ -48,18 +48,20 @@ function GW.LoginAlert()
 end
 function GW.ApplicationAlert(_, guildId)
     LibGuildRoster:Refresh()
-    local lvl, cp, _, _, playerName, _, _, message = GetGuildFinderGuildApplicationInfoAt(guildId, i)
+    -- local lvl, cp, _, _, playerName, _, achievementPoints, message = GetGuildFinderGuildApplicationInfoAt(guildId, i)
     -- level,  championPoints,  Alliance alliance,  classId,  accountName,  characterName,  achievementPoints,  applicationMessage
     local name = GW.CreateGuildLink(guildId)
     local numApplications = GetGuildFinderNumGuildApplications(guildId)
     local nEmpty = 0
     local threshold = GWSettings[worldName][displayName]["$AccountWide"].guilds[guildId].settings.applicationThreshold
+    local aThreshold = GWSettings[worldName][displayName]["$AccountWide"].guilds[guildId].settings.achievementThreshold
     local overthreshold = 0
+    local achievementThreshold = 0
     -- chat:Print("started")
     if DoesPlayerHaveGuildPermission(guildId, GUILD_PERMISSION_MANAGE_APPLICATIONS) == true then
         if numApplications > 0 then
             for i = 1, numApplications do
-                local lvl, cp, _, _, playerName, _, _, message = GetGuildFinderGuildApplicationInfoAt(guildId, i)
+                local lvl, cp, _, _, playerName, _, achievementPoints, message = GetGuildFinderGuildApplicationInfoAt(guildId, i)
 
                 if message == "" then
                     nEmpty = nEmpty + 1
@@ -67,17 +69,49 @@ function GW.ApplicationAlert(_, guildId)
                 if lvl == 50 and cp >= threshold then
                     overthreshold = overthreshold + 1
                 end
+                if achievementPoints >= aThreshold then
+                    achievementThreshold = achievementThreshold + 1
+                end
             end
             if GWSettings[worldName][displayName]["$AccountWide"].guilds[guildId].settings.applicationAlert == true then
                 if numApplications ~= 0 then
-                    if threshold < 1 then
-                        chat:Print("You have |cffffff" .. numApplications .. "|r open Applications (|cffffff" .. nEmpty .. "|r empty) in " .. name)
-                    else
+                    if threshold < 1 and aThreshold < 1 then
+                        chat:Print("You have |cffffff" .. numApplications .. "|r open Applications \n(|cffffff" .. nEmpty .. "|r empty)")
+                    elseif aThreshold > 1 and threshold < 1 then
                         chat:Print(
                             "You have |cffffff" ..
                                 numApplications ..
-                                    "|r open Applications (|cffffff" ..
-                                        nEmpty .. "|r empty and |cffffff" .. overthreshold .. "|r over |cffffff" .. threshold .. "|r CP) in " .. name
+                                    "|r open Application(s) in " ..
+                                        name ..
+                                            " \n(|cffffff" ..
+                                                nEmpty ..
+                                                    "|r empty and |cffffff" ..
+                                                        achievementThreshold ..
+                                                            "|r over |cffffff" .. ZO_CommaDelimitNumber(aThreshold) .. " |r Achievement Points)"
+                        )
+                    elseif aThreshold < 1 and threshold > 1 then
+                        chat:Print(
+                            "You have |cffffff" ..
+                                numApplications ..
+                                    "|r open Application(s) in " ..
+                                        name ..
+                                            " \n(|cffffff" ..
+                                                nEmpty .. "|r empty and |cffffff" .. overthreshold .. "|r over |cffffff" .. threshold .. "|r CP)"
+                        )
+                    elseif threshold > 1 and aThreshold > 1 then
+                        chat:Print(
+                            "You have |cffffff" ..
+                                numApplications ..
+                                    "|r open Application(s) in " ..
+                                        name ..
+                                            " \n(|cffffff" ..
+                                                nEmpty ..
+                                                    "|r empty, |cffffff" ..
+                                                        achievementThreshold ..
+                                                            "|r over |cffffff" ..
+                                                                ZO_CommaDelimitNumber(aThreshold) ..
+                                                                    "|r Achievement Points |cffffff" ..
+                                                                        overthreshold .. "|r over |cffffff" .. threshold .. "|r CP)"
                         )
                     end
                 end
