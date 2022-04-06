@@ -2,7 +2,7 @@ local GW =
     ITTsGhostwriter or
     {
         name = "ITTsGhostwriter",
-        version = 1.0,
+        version = 1.3,
         variableVersion = 194
     }
 ITTsGhostwriter = GW
@@ -192,9 +192,17 @@ local function GetGuilds()
         --* autobackup on login
         for l = 1, numMembers do
             local playerName, note, rankIndex, _, _ = GetGuildMemberInfo(id, l)
+            if playername ~= nil then
+                if string.len(playerName) == 20 then
+                    d(playerName)
+                end
+            end
             -- d("3")
             if st.guilds[id].settings.autobackup == true then
                 GWData[worldName].guilds.savedNotes[id][playerName] = note
+            end
+            if not st.guilds[id].settings.achievementThreshold then
+                st.guilds[id].settings.achievementThreshold = 5000
             end
         end
     end
@@ -367,7 +375,6 @@ local function AddPlayerContextMenuEntry(playerName, rawName)
             label = link,
             callback = function()
                 GuildInvite(guildId, playerName)
-                chat:Print(playerName .. guildId)
             end,
             visible = DoesPlayerHaveGuildPermission(guildId, GUILD_PERMISSION_INVITE)
         }
@@ -508,9 +515,7 @@ end
 local function MailPreview()
     return st.guilds[st.selectedGuild].settings.mailBody
 end
-local function NotePreview()
-    return st.guilds[st.selectedGuild].settings.mail.noteBody
-end
+
 local function makeITTDescription()
     local ITTDTitle = WINDOW_MANAGER:CreateControl("ITTsGhostwriterSettingsLogoTitle", ITTs_GhostwriterSettingsLogo, CT_LABEL)
     ITTDTitle:SetFont("$(BOLD_FONT)|$(KB_18)|soft-shadow-thin")
@@ -735,6 +740,10 @@ function GW.CreateSettingsWindow()
                     end
                 },
                 [5] = {
+                    type = "header",
+                    name = "Application Alert Settings"
+                },
+                [6] = {
                     type = "checkbox",
                     name = "Application alerts",
                     default = false,
@@ -745,7 +754,7 @@ function GW.CreateSettingsWindow()
                             return true
                         end
                     end,
-                    width = "half",
+                    width = "full",
                     tooltip = "Will announce in the system chat if new applications are open in your guild (needs permission to manage applications)!",
                     getFunc = function()
                         return st.guilds[st.selectedGuild].settings.applicationAlert
@@ -754,10 +763,10 @@ function GW.CreateSettingsWindow()
                         st.guilds[st.selectedGuild].settings.applicationAlert = value
                     end
                 },
-                [6] = {
+                [7] = {
                     type = "slider",
-                    name = "Application threshold",
-                    tooltip = "Set the minimum amount of CP for new applications to be shown in the system chat if a new application arrives.",
+                    name = "Minimum CP",
+                    tooltip = "Set the minimum amount of CP for new applications to be shown in the system chat if a new application arrives. (0 will remove it from the alert)",
                     getFunc = function()
                         return st.guilds[st.selectedGuild].settings.applicationThreshold
                     end,
@@ -776,13 +785,33 @@ function GW.CreateSettingsWindow()
                     max = 3600,
                     step = 50
                 },
-                [7] = {
-                    type = "texture",
-                    image = "/esoui/art/campaign/campaignbrowser_listdivider_right.dds",
-                    imageWidth = 510, --max of 250 for half width, 510 for full
-                    imageHeight = 5 --max of 100
-                },
                 [8] = {
+                    type = "slider",
+                    name = "Min Achievement Points",
+                    tooltip = "Set the minimum amount of achievementpoints for new applications to be shown in the system chat if a new application arrives. (0 will remove it from the alert)",
+                    getFunc = function()
+                        return st.guilds[st.selectedGuild].settings.achievementThreshold
+                    end,
+                    setFunc = function(number)
+                        st.guilds[st.selectedGuild].settings.achievementThreshold = number
+                    end,
+                    width = "half",
+                    disabled = function()
+                        if st.guilds[st.selectedGuild].settings.applicationAlert == true then
+                            return false
+                        else
+                            return true
+                        end
+                    end,
+                    min = 0,
+                    max = 50000,
+                    step = 1000
+                },
+                [9] = {
+                    type = "header",
+                    name = "New Member Settings"
+                },
+                [10] = {
                     type = "checkbox",
                     name = "Message Enabled",
                     default = false,
@@ -802,7 +831,7 @@ function GW.CreateSettingsWindow()
                         st.guilds[st.selectedGuild].settings.messageEnabled = value
                     end
                 },
-                [9] = {
+                [11] = {
                     type = "checkbox",
                     name = "Note Enabled",
                     default = false,
@@ -822,7 +851,7 @@ function GW.CreateSettingsWindow()
                         st.guilds[st.selectedGuild].settings.noteEnabled = value
                     end
                 },
-                [10] = {
+                [12] = {
                     type = "editbox",
                     name = "ChatMessage",
                     tooltip = "This message will be pasted in your chat!\n\nMaximum is " .. MAX_TEXT_CHAT_INPUT_CHARACTERS .. " Characters!",
@@ -844,7 +873,7 @@ function GW.CreateSettingsWindow()
                         st.guilds[st.selectedGuild].settings.messageBody = text
                     end
                 },
-                [11] = {
+                [13] = {
                     type = "editbox",
                     name = "Note Template",
                     tooltip = "This is the note you will set once a new member joins\n\nMaximum is 256 Characters!",
@@ -863,17 +892,16 @@ function GW.CreateSettingsWindow()
                         return st.guilds[st.selectedGuild].settings.noteBody
                     end,
                     setFunc = function(text)
-                        NotePreview()
                         st.guilds[st.selectedGuild].settings.noteBody = text
                     end
                 },
-                [12] = {
+                [14] = {
                     type = "texture",
                     image = "/esoui/art/campaign/campaignbrowser_listdivider_right.dds",
                     imageWidth = 510, --max of 250 for half width, 510 for full
                     imageHeight = 5 --max of 100
                 },
-                [13] = {
+                [15] = {
                     type = "checkbox",
                     name = "Mail Enabled",
                     default = false,
@@ -893,7 +921,7 @@ function GW.CreateSettingsWindow()
                         st.guilds[st.selectedGuild].settings.mailEnabled = value
                     end
                 },
-                [14] = {
+                [16] = {
                     type = "editbox",
                     name = "MailSubject",
                     tooltip = "This is the subject of the mail\n\nMaximum is " .. MAIL_MAX_SUBJECT_CHARACTERS .. " Characters",
@@ -915,7 +943,7 @@ function GW.CreateSettingsWindow()
                         st.guilds[st.selectedGuild].settings.mailSubject = text
                     end
                 },
-                [15] = {
+                [17] = {
                     type = "editbox",
                     name = "MailBody",
                     tooltip = "This is the mail!\n\nMaximum is " .. MAIL_MAX_BODY_CHARACTERS .. " Characters!",
@@ -938,12 +966,12 @@ function GW.CreateSettingsWindow()
                         st.guilds[st.selectedGuild].settings.mailBody = text
                     end
                 },
-                [16] = {
+                [18] = {
                     type = "description",
                     title = "",
                     text = [[ ]]
                 },
-                [17] = {
+                [19] = {
                     type = "submenu",
                     name = "Mail Preview",
                     icon = "/esoui/art/miscellaneous/search_icon.dds",
@@ -956,7 +984,7 @@ function GW.CreateSettingsWindow()
                         }
                     }
                 },
-                [18] = {
+                [20] = {
                     type = "submenu",
                     name = "|cffffffBackup options",
                     reference = "GW_BackupOptions",
@@ -989,16 +1017,9 @@ function GW.CreateSettingsWindow()
             }
         },
         [9] = {
-            type = "submenu",
-            name = "Changelog",
-            icon = "/esoui/art/help/help_tabicon_feedback_up.dds",
-            controls = {
-                [1] = {
-                    type = "description",
-                    title = "Changelog current Version",
-                    text = "Initially released"
-                }
-            }
+            type = "description",
+            title = "",
+            text = [[ ]]
         },
         [10] = {
             type = "description",
