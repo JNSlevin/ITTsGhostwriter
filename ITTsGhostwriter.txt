@@ -1,8 +1,8 @@
 ## Title: ITTs |c04B4AEGhostwriter
 ## Author: |c268074JN_Slevin|r
-## Version: 1.0
+## Version: 1.3
 ## Description: Keeps on top of newcomers, woosh! Part of the ITTs Bot family, handy helpers for Trade Guilds.
-## APIVersion: 101031
+## APIVersion: 101033
 ## SavedVariables: GWSettings GWData
 ## DependsOn: LibAddonMenu-2.0 LibChatMessage LibGuildRoster LibCustomMenu>=711 
 ## 
