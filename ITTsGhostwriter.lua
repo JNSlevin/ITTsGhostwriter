@@ -1,18 +1,20 @@
 local GW =
-    ITTsGhostwriter or
+ITTsGhostwriter or
     {
         name = "ITTsGhostwriter",
-        version = 1.3,
+        version = 1.4,
         variableVersion = 194
     }
 ITTsGhostwriter = GW
-GW.COLOR = "CCA21A"
+GW.COLOR = "1590B2"
 --------
 --Libs--
 --------
 local LAM = LibAddonMenu2
 local libCM = LibCustomMenu
-local chat = LibChatMessage("ITTsGhostwriter", "GW") -- long and short tag to identify who is printing the message
+local async = LibAsync
+local task = async:Create( "ITTsGhostwriter" )
+local chat = LibChatMessage( "ITTsGhostwriter", "GW" ) -- long and short tag to identify who is printing the message
 -- local chat = chat:SetTagColor(GW.COLOR)
 
 -------------
@@ -26,7 +28,7 @@ local defaults = {
     },
     guilds = {},
     firstload = true,
-    selectedGuild = GetGuildId(1)
+    selectedGuild = GetGuildId( 1 )
 }
 
 local dataDefaults = {}
@@ -38,6 +40,7 @@ local dataDefaults = {}
 local guildName = GetGuildName()
 local GWadvertisement = ("\n\n\nSent via |cffffffITT's|c" .. GW.COLOR .. "Ghostwriter|r")
 
+GW.InTributeMatch = false
 local worldName = GetWorldName()
 local st = {}
 local db = {}
@@ -85,30 +88,34 @@ local dateTooltips = {
 -----------------
 --OnAddonLoaded--
 -----------------
-function GW.OnAddOnLoaded(event, addonName)
+function GW.OnAddOnLoaded( event, addonName )
     if addonName ~= GW.name then
         return
     end
+
     GW.Initialize()
 end
+
 -----------
 --Methods--
 -----------
 
-function GW.BackupNotes(guildId)
+function GW.BackupNotes( guildId )
     -- local numGuilds = GetNumGuilds()
 
     -- local name = GetGuildName(GetGuildId(guildId))
     -- local id = GetGuildId(guildId)
-    local numMembers = GetNumGuildMembers(guildId)
+    local numMembers = GetNumGuildMembers( guildId )
     -- local color = GW.GetGuildColor(guildId)
-    local link = GW.CreateGuildLink(guildId)
-    if GW.GetPermission_Note(guildId) == false then
-        chat:Print("You currently do not have Ghostwriter noting permissions for " .. link)
+    local link = GW.CreateGuildLink( guildId )
+    if GW.GetPermission_Note( guildId ) == false then
+        chat:Print( "|cffffffYou currently do not have |c" ..
+            GW.COLOR .. "Ghostwriter |cffffffnoting permissions for " .. link )
     else
         if not GWData[worldName].guilds then
             GWData[worldName].guilds = {}
         end
+
         if not GWData[worldName].guilds.savedNotes then
             GWData[worldName].guilds.savedNotes = {}
         end
@@ -116,33 +123,36 @@ function GW.BackupNotes(guildId)
         if not GWData[worldName].guilds.savedNotes[guildId] then
             GWData[worldName].guilds.savedNotes[guildId] = {}
         end
+
         for l = 1, numMembers do
-            local playerName, note, rankIndex, _, _ = GetGuildMemberInfo(guildId, l)
+            local playerName, note, rankIndex, _, _ = GetGuildMemberInfo( guildId, l )
             -- d("3")
 
             GWData[worldName].guilds.savedNotes[guildId][playerName] = note
             -- GWSettings.savedNotes[worldName].guilds[guildId][playerName] = note
         end
-        chat:Print("Notebackup for " .. link .. " successful!")
+        chat:Print( "|cffffffNote backup for " .. link .. " |cffffffsuccessful!" )
     end
+
     LibGuildRoster:Refresh()
 end
+
 --! Setup guilds
 
 local function GetGuilds()
     local numGuilds = GetNumGuilds()
 
     for i = 1, numGuilds do
-        local id = GetGuildId(i)
-        local name = GetGuildName(id)
-        local numMembers = GetNumGuildMembers(id)
-        local color = GW.GetGuildColor(i)
-        local gIndex = GW.GetGuildIndex(id)
-        local link = GW.CreateGuildLink(id)
+        local id = GetGuildId( i )
+        local name = GetGuildName( id )
+        local numMembers = GetNumGuildMembers( id )
+        local color = GW.GetGuildColor( i )
+        local gIndex = GW.GetGuildIndex( id )
+        local link = GW.CreateGuildLink( id )
 
         local guildDefaults = {
             ["messageBody"] = "Welcome %PLAYER% to %GUILD% do we get cake?",
-            ["mailBody"] = "I am very happy to welcome you to my guild %PLAYER%\n cakes are to be deposited in our guildbank <3",
+            ["mailBody"] = "I am very happy to welcome you to my guild %PLAYER%\ncakes are to be deposited in our guildbank <3",
             ["mailEnabled"] = false,
             ["mailSubject"] = "Welcome to %GUILD%",
             ["messageEnabled"] = true,
@@ -160,23 +170,28 @@ local function GetGuilds()
         if not st.guilds[id] then
             st.guilds[id] = {}
         end
+
         if not st.guilds[id].settings then
-            st.guilds[id].settings = ZO_DeepTableCopy(guildDefaults)
+            st.guilds[id].settings = ZO_DeepTableCopy( guildDefaults )
         end
 
         --*Setup Data
         if not GWData then
             GWData = {}
         end
+
         if not GWData[worldName] then
             GWData[worldName] = {}
         end
+
         if not GWData[worldName].guilds then
             GWData[worldName].guilds = {}
         end
+
         if not GWData[worldName].guilds.savedNotes then
             GWData[worldName].guilds.savedNotes = {}
         end
+
         if not GWData[worldName].guilds.savedNotes[id] then
             GWData[worldName].guilds.savedNotes[id] = {}
         end
@@ -191,120 +206,151 @@ local function GetGuilds()
         guildTableValues[i] = id
         --* autobackup on login
         for l = 1, numMembers do
-            local playerName, note, rankIndex, _, _ = GetGuildMemberInfo(id, l)
+            local playerName, note, rankIndex, _, _ = GetGuildMemberInfo( id, l )
             if playername ~= nil then
-                if string.len(playerName) == 20 then
-                    d(playerName)
+                if string.len( playerName ) == 20 then
+                    d( playerName )
                 end
             end
+
             -- d("3")
             if st.guilds[id].settings.autobackup == true then
                 GWData[worldName].guilds.savedNotes[id][playerName] = note
             end
+
             if not st.guilds[id].settings.achievementThreshold then
                 st.guilds[id].settings.achievementThreshold = 5000
             end
         end
     end
 end
-local function OnMemberJoin(_, guildId, playerName)
-    local guildName = GetGuildName(guildId)
+
+local function OnMemberJoin( _, guildId, playerName )
+    local guildName = GetGuildName( guildId )
     -- local guilds = st.guilds[guildId]
-    local date = os.date(st.guilds[guildId].settings.dateFormat)
-    local index = GetGuildMemberIndexFromDisplayName(guildId, playerName)
-    local name, _, _, status, offlinetime = GetGuildMemberInfo(guildId, index)
-    local gIndex = GW.GetGuildIndex(guildId)
+    local date = os.date( st.guilds[guildId].settings.dateFormat )
+    local index = GetGuildMemberIndexFromDisplayName( guildId, playerName )
+    local name, _, _, status, offlinetime = GetGuildMemberInfo( guildId, index )
+    local gIndex = GW.GetGuildIndex( guildId )
     -- local note = GetPermissionsFromMemberNote(guildId)
 
     -- if GuildPermissions(guildId) == true then
-    if GW.GetPermission_Chat(guildId) == true then
-        if st.guilds[guildId].settings.messageEnabled == true then
-            local template = zo_strformat(st.guilds[guildId].settings.messageBody)
-            -- local template = "test"
-            if not template or template == "" then
-                return
-            end
+    if GW.GetPermission_Chat( guildId ) == false and GW.GetPermission_Note( guildId ) == false and
+        GW.GetPermission_Mail( guildId ) == false then
+        return
+    elseif IsUnitInCombat( "player" ) == true then
+        chat:Print( "|cffffffWelcome sequence queued, waiting for combat to end..." )
+    elseif IsUnitDeadOrReincarnating( "player" ) == true then
+        chat:Print( "|cffffffWelcome sequence queued, waiting for reincarnation..." )
+    elseif GW.InTributeMatch == true then
+        chat:Print( "|cffffffWelcome sequence queued, waiting for Tribute match to end..." )
+    end
 
-            local formattedMessage = string.gsub(template, "%%PLAYER%%", playerName)
-            local eformat = string.gsub(formattedMessage, "%%GUILD%%", guildName)
-            local fformat = string.gsub(eformat, "%%DATE%%", date)
-
-            if IsChatSystemAvailableForCurrentPlatform() == true and GW.ChatReady == true then
-                if index ~= nil then
-                    if st.generalSettings.offlinecheck == false then
-                        if CanWriteGuildChannel(_G["CHAT_CHANNEL_GUILD_" .. gIndex]) == true then
-                            StartChatInput(fformat, _G["CHAT_CHANNEL_GUILD_" .. gIndex])
-                        end
+    task:WaitUntil(
+        function()
+            return GW.ReadyToWelcome()
+        end
+    ):Then(
+        function()
+            if GW.GetPermission_Chat( guildId ) == true then
+                if st.guilds[guildId].settings.messageEnabled == true then
+                    local template = zo_strformat( st.guilds[guildId].settings.messageBody )
+                    -- local template = "test"
+                    if not template or template == "" then
+                        return
                     end
 
-                    if st.generalSettings.offlinecheck == true then
-                        if status ~= PLAYER_STATUS_OFFLINE then
-                            if CanWriteGuildChannel(_G["CHAT_CHANNEL_GUILD_" .. gIndex]) == true then
-                                StartChatInput(fformat, _G["CHAT_CHANNEL_GUILD_" .. gIndex])
+                    local formattedMessage = string.gsub( template, "%%PLAYER%%", playerName )
+                    local eformat = string.gsub( formattedMessage, "%%GUILD%%", guildName )
+                    local fformat = string.gsub( eformat, "%%DATE%%", date )
+
+                    if IsChatSystemAvailableForCurrentPlatform() == true and GW.ChatReady == true then
+                        if index ~= nil then
+                            if st.generalSettings.offlinecheck == false then
+                                if CanWriteGuildChannel( _G["CHAT_CHANNEL_GUILD_" .. gIndex] ) == true then
+                                    StartChatInput( fformat, _G["CHAT_CHANNEL_GUILD_" .. gIndex] )
+                                end
                             end
-                        else
-                            chat:Print("|cffffff" .. ZO_LinkHandler_CreateDisplayNameLink(playerName) .. "|r is offline")
+
+                            if st.generalSettings.offlinecheck == true then
+                                if status ~= PLAYER_STATUS_OFFLINE then
+                                    if CanWriteGuildChannel( _G["CHAT_CHANNEL_GUILD_" .. gIndex] ) == true then
+                                        StartChatInput( fformat, _G["CHAT_CHANNEL_GUILD_" .. gIndex] )
+                                    end
+                                else
+                                    chat:Print( "|c" ..
+                                        GW.COLOR ..
+                                        ZO_LinkHandler_CreateDisplayNameLink( playerName ) .. "|r |cffffffis offline" )
+                                end
+                            end
                         end
                     end
                 end
             end
-        end
-    end
-    if GW.GetPermission_Note(guildId) == true then
-        if st.guilds[guildId].settings.noteEnabled == true then
-            if GWData[worldName].guilds.savedNotes[guildId][playerName] == nil or GWData[worldName].guilds.savedNotes[guildId][playerName] == "" then
-                local membernote = zo_strformat(st.guilds[guildId].settings.noteBody)
-                if not membernote or membernote == "" then
-                    return
-                end
 
-                local fm = string.gsub(membernote, "%%PLAYER%%", playerName)
-                local fm = string.gsub(fm, "%%GUILD%%", guildName)
-                local fm = string.gsub(fm, "%%DATE%%", date)
-                if st.generalSettings.offlinemodecheck == true then
-                    if offlinetime > 1209600 then -- 2 weeks
-                        fm = (fm .. "\n" .. "|cffffffOfflinemode|r")
+            if GW.GetPermission_Note( guildId ) == true then
+                if st.guilds[guildId].settings.noteEnabled == true then
+                    if GWData[worldName].guilds.savedNotes[guildId][playerName] == nil or
+                        GWData[worldName].guilds.savedNotes[guildId][playerName] == ""
+                    then
+                        local membernote = zo_strformat( st.guilds[guildId].settings.noteBody )
+                        if not membernote or membernote == "" then
+                            return
+                        end
+
+                        local fm = string.gsub( membernote, "%%PLAYER%%", playerName )
+                        local fm = string.gsub( fm, "%%GUILD%%", guildName )
+                        local fm = string.gsub( fm, "%%DATE%%", date )
+                        if st.generalSettings.offlinemodecheck == true then
+                            if offlinetime > 1209600 then -- 2 weeks
+                                fm = (fm .. "\n" .. "|cffffffOfflinemode|r")
+                            end
+                        end
+
+                        if name == playerName then
+                            GW.writeNote( guildId, index, fm )
+                        end
+                    else
+                        if name == playerName then
+                            GW.writeNote( guildId, index, GWData[worldName].guilds.savedNotes[guildId][playerName] )
+                        end
                     end
                 end
-                if name == playerName then
-                    GW.writeNote(guildId, index, fm)
-                end
-            else
-                if name == playerName then
-                    GW.writeNote(guildId, index, GWData[worldName].guilds.savedNotes[guildId][playerName])
+            end
+
+            if GW.GetPermission_Mail( guildId ) == true then
+                if st.guilds[guildId].settings.mailEnabled == true then
+                    local mailBody = zo_strformat( st.guilds[guildId].settings.mailBody )
+                    local mailSubject = zo_strformat( st.guilds[guildId].settings.mailSubject )
+
+                    if not mailBody or mailBody == "" then
+                        return
+                    end
+
+                    local mbody = string.gsub( mailBody, "%%PLAYER%%", playerName )
+                    local mbody = string.gsub( mbody, "%%GUILD%%", guildName )
+                    local mbody = string.gsub( mbody, "%%DATE%%", date )
+                    local msubject = string.gsub( mailSubject, "%%PLAYER%%", playerName )
+                    local msubject = string.gsub( msubject, "%%GUILD%%", guildName )
+                    local msubject = string.gsub( msubject, "%%DATE%%", date )
+                    -- local astody = mBody .. GWad
+
+                    if name == playerName then
+                        GW.writeMail( playerName, msubject, mbody )
+                    end
                 end
             end
         end
-    end
-    if GW.GetPermission_Mail(guildId) == true then
-        if st.guilds[guildId].settings.mailEnabled == true then
-            local mailBody = zo_strformat(st.guilds[guildId].settings.mailBody)
-            local mailSubject = zo_strformat(st.guilds[guildId].settings.mailSubject)
-
-            if not mailBody or mailBody == "" then
-                return
-            end
-
-            local mbody = string.gsub(mailBody, "%%PLAYER%%", playerName)
-            local mbody = string.gsub(mbody, "%%GUILD%%", guildName)
-            local mbody = string.gsub(mbody, "%%DATE%%", date)
-            local msubject = string.gsub(mailSubject, "%%PLAYER%%", playerName)
-            local msubject = string.gsub(msubject, "%%GUILD%%", guildName)
-            local msubject = string.gsub(msubject, "%%DATE%%", date)
-            -- local astody = mBody .. GWad
-
-            if name == playerName then
-                GW.writeMail(playerName, msubject, mbody)
-            end
-        end
-    end
+    )
 end
 
 local function firstLoad()
     --
     if st.firstload == true then
         chat:Print(
-            "Thank you for downloading ITTsGhostwriter. Please visit the Website for setup help! You will need to setup first to make the addon useable"
+            "|cffffffThank you for downloading |c" ..
+            GW.COLOR ..
+            "ITTsGhostwriter|cffffff. Please visit the Website for setup help! You will need to setup first to make the addon useable"
         )
         st.firstload = false
     end
@@ -312,20 +358,20 @@ end
 
 local function HideBackupButton()
     if st.generalSettings.backupButton == true then
-        GW_button:SetHidden(false)
+        GW_button:SetHidden( false )
     else
-        GW_button:SetHidden(true)
+        GW_button:SetHidden( true )
     end
 end
 
-local scene = SCENE_MANAGER:GetScene("guildRoster")
-scene:RegisterCallback("StateChange", sceneChange)
+local scene = SCENE_MANAGER:GetScene( "guildRoster" )
+scene:RegisterCallback( "StateChange", sceneChange )
 local function EnableBackupButton()
     ZO_PreHook(
         GUILD_ROSTER_MANAGER,
         "OnGuildIdChanged",
-        function(self)
-            GW_button:SetEnabled(not GW.shouldHideFor[self.guildId])
+        function( self )
+            GW_button:SetEnabled( not GW.shouldHideFor[self.guildId] )
         end
     )
 end
@@ -333,57 +379,64 @@ end
 ------------------
 ---LibCustomMenu--
 ------------------
-local function BackupSpecificNote(guildId, playerName)
-    local playerLink = ZO_LinkHandler_CreateDisplayNameLink(playerName)
-    local memberIndex = GetGuildMemberIndexFromDisplayName(guildId, playerName)
-    local name, note, rankIndex = GetGuildMemberInfo(guildId, memberIndex)
+local function BackupSpecificNote( guildId, playerName )
+    local playerLink = ZO_LinkHandler_CreateDisplayNameLink( playerName )
+    local memberIndex = GetGuildMemberIndexFromDisplayName( guildId, playerName )
+    local name, note, rankIndex = GetGuildMemberInfo( guildId, memberIndex )
     if note == GWData[worldName].guilds.savedNotes[guildId][playerName] then
-        chat:Print("Note for |cffffff" .. playerLink .. "|r in " .. GW.CreateGuildLink(guildId) .. " is already saved!")
-    elseif GWData[worldName].guilds.savedNotes[guildId][playerName] ~= note or GWData[worldName].guilds.savedNotes[guildId][playerName] == nil then
+        chat:Print( "|cffffffNote for |c" ..
+            GW.COLOR .. playerLink .. "|r |cffffffin " .. GW.CreateGuildLink( guildId ) .. " |cffffffis already saved!" )
+    elseif GWData[worldName].guilds.savedNotes[guildId][playerName] ~= note or
+        GWData[worldName].guilds.savedNotes[guildId][playerName] == nil then
         GWData[worldName].guilds.savedNotes[guildId][playerName] = note
-        chat:Print("Saved note for |cffffff" .. playerLink .. "|r in " .. GW.CreateGuildLink(guildId) .. "!")
+        chat:Print( "|cffffffSaved note for |c" ..
+            GW.COLOR .. playerLink .. "|r |cffffffin " .. GW.CreateGuildLink( guildId ) .. "|cffffff!" )
     end
+
     LibGuildRoster:Refresh()
 end
 
-local function RetrieveSpecificNote(guildId, playerName)
-    local playerLink = ZO_LinkHandler_CreateDisplayNameLink(playerName)
-    local memberIndex = GetGuildMemberIndexFromDisplayName(guildId, playerName)
-    local name, note, rankIndex = GetGuildMemberInfo(guildId, memberIndex)
+local function RetrieveSpecificNote( guildId, playerName )
+    local playerLink = ZO_LinkHandler_CreateDisplayNameLink( playerName )
+    local memberIndex = GetGuildMemberIndexFromDisplayName( guildId, playerName )
+    local name, note, rankIndex = GetGuildMemberInfo( guildId, memberIndex )
     if note == GWData[worldName].guilds.savedNotes[guildId][playerName] then
         chat:Print(
-            "Member note in backup for: |cffffff" .. playerLink .. "|r in " .. GW.CreateGuildLink(guildId) .. "is the same as the current note"
+            "|cffffffMember note in backup for: |c" ..
+            GW.COLOR ..
+            playerLink .. "|r |cffffffin " .. GW.CreateGuildLink( guildId ) .. "|cffffffis the same as the current note"
         )
     else
-        SetGuildMemberNote(guildId, memberIndex, GWData[worldName].guilds.savedNotes[guildId][playerName])
+        SetGuildMemberNote( guildId, memberIndex, GWData[worldName].guilds.savedNotes[guildId][playerName] )
     end
 end
 
-local function AddPlayerContextMenuEntry(playerName, rawName)
+local function AddPlayerContextMenuEntry( playerName, rawName )
     local numGuilds = GetNumGuilds()
 
     local contextEntries = {}
 
     for i = 1, GetNumGuilds() do
-        local guildId = GetGuildId(i)
-        local link = GW.CreateGuildLink(guildId)
+        local guildId = GetGuildId( i )
+        local link = GW.CreateGuildLink( guildId )
         -- local color = GW.GetGuildColor(i)
 
-        local guildName = GetGuildName(guildId)
+        local guildName = GetGuildName( guildId )
 
         contextEntries[i] = {
             label = link,
             callback = function()
-                GuildInvite(guildId, playerName)
+                GuildInvite( guildId, playerName )
             end,
-            visible = DoesPlayerHaveGuildPermission(guildId, GUILD_PERMISSION_INVITE)
+            visible = DoesPlayerHaveGuildPermission( guildId, GUILD_PERMISSION_INVITE )
         }
     end
-    AddCustomSubMenuItem("ITTs |c" .. GW.COLOR .. "Ghostwriter|r Invite to:", contextEntries)
+    AddCustomSubMenuItem( "|cffffffITTs |c" .. GW.COLOR .. "Ghostwriter|r |cffffffInvite to:", contextEntries )
 end
-libCM:RegisterPlayerContextMenu(AddPlayerContextMenuEntry, libCM.CATEGORY_LATE)
-local function AddGuildRosterMenuEntry(control, button, upInside)
-    local data = ZO_ScrollList_GetData(control)
+
+libCM:RegisterPlayerContextMenu( AddPlayerContextMenuEntry, libCM.CATEGORY_LATE )
+local function AddGuildRosterMenuEntry( control, button, upInside )
+    local data = ZO_ScrollList_GetData( control )
     local guildId = GUILD_ROSTER_MANAGER:GetGuildId()
     -- local guildName = GUILD_ROSTER_MANAGER:GetGuildName()
     -- local guildAlliance = GUILD_ROSTER_MANAGER:GetGuildAlliance()
@@ -393,34 +446,34 @@ local function AddGuildRosterMenuEntry(control, button, upInside)
         {
             label = "Backup Note",
             callback = function()
-                BackupSpecificNote(guildId, data.displayName)
+                BackupSpecificNote( guildId, data.displayName )
             end,
-            visible = GW.GetPermission_Note(guildId)
+            visible = GW.GetPermission_Note( guildId )
         },
         {
             label = "Retrieve Note",
             callback = function()
-                RetrieveSpecificNote(guildId, data.displayName)
+                RetrieveSpecificNote( guildId, data.displayName )
             end,
-            visible = GW.GetPermission_Note(guildId)
+            visible = GW.GetPermission_Note( guildId )
         },
         {
             label = "Initiate welcome sequence",
             callback = function()
-                OnMemberJoin(_, guildId, data.displayName)
+                OnMemberJoin( _, guildId, data.displayName )
             end,
             visible = function()
-                if GW.GetPermission_Note(guildId) == true or GW.GetPermission_Mail(guildId) == true or GW.GetPermission_Chat(guildId) == true then
+                if GW.GetPermission_Note( guildId ) == true or GW.GetPermission_Mail( guildId ) == true or
+                    GW.GetPermission_Chat( guildId ) == true then
                     return true
                 else
                     return false
                 end
             end,
             disabled = function()
-                if
-                    st.guilds[guildId].settings.noteEnabled == true or st.guilds[guildId].settings.mailEnabled == true or
-                        st.guilds[guildId].settings.chatEnabled == true
-                 then
+                if st.guilds[guildId].settings.noteEnabled == true or st.guilds[guildId].settings.mailEnabled == true or
+                    st.guilds[guildId].settings.chatEnabled == true
+                then
                     return false
                 else
                     return true
@@ -434,19 +487,20 @@ local function AddGuildRosterMenuEntry(control, button, upInside)
             --This only exists to add a seperator
         end
     )
-    if GW.GetPermission_Note(guildId) == true or GW.GetPermission_Mail(guildId) == true or GW.GetPermission_Chat(guildId) == true then
-        AddCustomSubMenuItem("ITTs |c" .. GW.COLOR .. "Ghostwriter|r", entries)
+    if GW.GetPermission_Note( guildId ) == true or GW.GetPermission_Mail( guildId ) == true or
+        GW.GetPermission_Chat( guildId ) == true then
+        AddCustomSubMenuItem( "|cffffffITTs |c" .. GW.COLOR .. "Ghostwriter|r", entries )
     end
 end
 
-libCM:RegisterGuildRosterContextMenu(AddGuildRosterMenuEntry, libCM.CATEGORY_LATE)
+libCM:RegisterGuildRosterContextMenu( AddGuildRosterMenuEntry, libCM.CATEGORY_LATE )
 
 ------------------
 --LibGuildRoster--
 ------------------
 function GW.RosterRow()
     GW.myGuildColumn =
-        LibGuildRoster:AddColumn(
+    LibGuildRoster:AddColumn(
         {
             key = "GW_Notes",
             disabled = false,
@@ -459,10 +513,10 @@ function GW.RosterRow()
             },
             row = {
                 align = TEXT_ALIGN_CENTER,
-                data = function(guildId, data, index)
-                    local _, note, rankIndex, _, _ = GetGuildMemberInfo(guildId, index)
-                    local iName, iIndex = GetGuildInviteeInfo(guildId, 1)
-                    local rankId = GetGuildRankId(guildId, rankIndex)
+                data = function( guildId, data, index )
+                    local _, note, rankIndex, _, _ = GetGuildMemberInfo( guildId, index )
+                    local iName, iIndex = GetGuildInviteeInfo( guildId, 1 )
+                    local rankId = GetGuildRankId( guildId, rankIndex )
                     if GWData[worldName].guilds.savedNotes[guildId][GetDisplayName()] ~= nil then
                         if note ~= "" then
                             if GWData[worldName].guilds.savedNotes[guildId][data.displayName] == "" then
@@ -509,6 +563,44 @@ function GW.RosterRow()
 end
 
 ----------------
+---MailChecks---
+----------------
+
+-- Some things prevent people from sending mails, or straight up stop what the user is doing. So we will need to put in some checks if the person is doing one of those things.
+function GW.CombatCheck( eventCode, inCombat )
+    if inCombat then
+        GW.combat = true
+    else
+        GW.combat = false
+    end
+end
+
+function GW.OnPlayerDeath( eventCode )
+    GW.PlayerDead = true
+end
+
+function GW.OnPlayerReincarnated( eventCode )
+    GW.PlayerDead = false
+end
+
+function GW.TributeMatchCheck( eventId, flowState )
+    if flowState ~= TRIBUTE_GAME_FLOW_STATE_INACTIVE then
+        GW.InTributeMatch = true
+    elseif flowState == TRIBUTE_GAME_FLOW_STATE_INACTIVE then
+        GW.InTributeMatch = false
+    end
+end
+
+function GW.ReadyToWelcome()
+    local ready = false
+    if IsUnitDeadOrReincarnating( "player" ) == false and IsUnitInCombat( "player" ) == false and GW.InTributeMatch == false then
+        ready = true
+    end
+
+    return ready
+end
+
+----------------
 --LAM Settings--
 ----------------
 
@@ -517,33 +609,36 @@ local function MailPreview()
 end
 
 local function makeITTDescription()
-    local ITTDTitle = WINDOW_MANAGER:CreateControl("ITTsGhostwriterSettingsLogoTitle", ITTs_GhostwriterSettingsLogo, CT_LABEL)
-    ITTDTitle:SetFont("$(BOLD_FONT)|$(KB_18)|soft-shadow-thin")
-    ITTDTitle:SetText("|Cfcba03INDEPENDENT TRADING TEAM")
-    ITTDTitle:SetDimensions(240, 31)
-    ITTDTitle:SetHorizontalAlignment(1)
-    ITTDTitle:SetAnchor(TOP, ITTs_GhostWriterSettingsLogo, BOTTOM, 0, 40)
+    local ITTDTitle = WINDOW_MANAGER:CreateControl( "ITTsGhostwriterSettingsLogoTitle", ITTs_GhostwriterSettingsLogo, CT_LABEL )
+    ITTDTitle:SetFont( "$(BOLD_FONT)|$(KB_18)|soft-shadow-thin" )
+    ITTDTitle:SetText( "|Cfcba03INDEPENDENT TRADING TEAM" )
+    ITTDTitle:SetDimensions( 240, 31 )
+    ITTDTitle:SetHorizontalAlignment( 1 )
+    ITTDTitle:SetAnchor( TOP, ITTs_GhostWriterSettingsLogo, BOTTOM, 0, 40 )
 
-    local ITTDLabel = WINDOW_MANAGER:CreateControl("ITTsGhostwriterSettingsLogoTitleServer", ITTsGhostwriterSettingsLogoTitle, CT_LABEL)
-    ITTDLabel:SetFont("$(MEDIUM_FONT)|$(KB_16)|soft-shadow-thick")
-    ITTDLabel:SetText("|C646464PC EU")
-    ITTDLabel:SetDimensions(240, 21)
-    ITTDLabel:SetHorizontalAlignment(1)
-    ITTDLabel:SetAnchor(TOP, ITTsGhostwriterSettingsLogoTitle, BOTTOM, 0, -5)
+    local ITTDLabel = WINDOW_MANAGER:CreateControl( "ITTsGhostwriterSettingsLogoTitleServer", ITTsGhostwriterSettingsLogoTitle
+        , CT_LABEL )
+    ITTDLabel:SetFont( "$(MEDIUM_FONT)|$(KB_16)|soft-shadow-thick" )
+    ITTDLabel:SetText( "|C646464PC EU" )
+    ITTDLabel:SetDimensions( 240, 21 )
+    ITTDLabel:SetHorizontalAlignment( 1 )
+    ITTDLabel:SetAnchor( TOP, ITTsGhostwriterSettingsLogoTitle, BOTTOM, 0, -5 )
 
-    ITT_HideMePlsGW:SetHidden(true)
+    ITT_HideMePlsGW:SetHidden( true )
 end
 
 --* Call function after Menu has been created to prevent using the getFunc
 local lamPanelCreationInitDone = false
-local function LAMControlsCreatedCallbackFunc(pPanel)
+local function LAMControlsCreatedCallbackFunc( pPanel )
     -- d("hello2")
     if pPanel ~= GW.GWSettingsPanel then
         return
     end
+
     if lamPanelCreationInitDone == true then
         return
     end
+
     --Do stuff here
     -- d("hello")
 
@@ -555,6 +650,7 @@ local function LAMControlsCreatedCallbackFunc(pPanel)
     makeITTDescription()
     lamPanelCreationInitDone = true
 end
+
 -- TODO: change one saves for all of them?
 --! its all fucked ¯\_(ツ)_/¯
 --*update not fucked anymore thank you siri :D
@@ -564,15 +660,15 @@ function GW.CreateSettingsWindow()
     local text = {}
     local selectedGuildId = guildTableValues[1]
     local selectedDateFormat = dateValues[1]
-    local color = GW.GetGuildColor(1)
+    local color = GW.GetGuildColor( 1 )
     GW.GWSettingsPanel =
-        LAM:RegisterAddonPanel(
+    LAM:RegisterAddonPanel(
         "GhostwriterOptions",
         {
             type = "panel",
             name = "ITT's |c" .. GW.COLOR .. "Ghostwriter|r",
             author = "JN Slevin",
-            version = tostring(GW.version),
+            version = tostring( GW.version ),
             registerForRefresh = true,
             registerForDefaults = false,
             website = "https://github.com/JNSlevin/ITTs-Ghostwriter"
@@ -598,7 +694,7 @@ function GW.CreateSettingsWindow()
         [2] = {
             type = "description",
             title = "Setup |c" .. GW.COLOR .. "Ghostwriter|r",
-            text = "Please visit the Website (linked in the description). \n\n|cff0000The addon will not work and all guilds pecific settings will be disabled without setup!",
+            text = "Please visit the Website (linked in the description). \n\n|cff0000The addon will not work and all guild specific settings will be disabled without setup!",
             enableLinks = true,
             width = "full" --or "half" (optional)
         },
@@ -622,7 +718,7 @@ function GW.CreateSettingsWindow()
             getFunc = function()
                 return st.generalSettings.offlinecheck
             end,
-            setFunc = function(value)
+            setFunc = function( value )
                 st.generalSettings.offlinecheck = value
             end,
             d
@@ -637,7 +733,7 @@ function GW.CreateSettingsWindow()
             getFunc = function()
                 return st.generalSettings.offlinemodecheck
             end,
-            setFunc = function(value)
+            setFunc = function( value )
                 st.generalSettings.offlinemodecheck = value
             end,
             d
@@ -654,7 +750,7 @@ function GW.CreateSettingsWindow()
             getFunc = function()
                 return st.generalSettings.backupButton
             end,
-            setFunc = function(newValue)
+            setFunc = function( newValue )
                 st.generalSettings.backupButton = newValue
                 HideBackupButton()
                 EnableBackupButton()
@@ -669,12 +765,13 @@ function GW.CreateSettingsWindow()
                     type = "description",
                     --title = "My Title",	--(optional)
                     title = nil, --(optional)
-                    text = "Here you can edit the settings for each guild! First choose the guild in the dropdown below, then edit the templates or turn settings on / off!\n\nThe current placeholders are: \n|c" ..
+                    text = "Here you can edit the settings for each guild! First choose the guild in the dropdown below, then edit the templates or turn settings on / off!\n\nThe current placeholders are: \n|c"
+                        ..
                         GW.COLOR ..
-                            "%DATE%|r\t-\twill be replaced by the current date (in the format you chose below)!\n|c" ..
-                                GW.COLOR ..
-                                    "%PLAYER%|r\t-\twill be replaced by the account name of the player!\n|c" ..
-                                        GW.COLOR .. "%GUILD%|r\t-\twill be replaced by the guilds name!",
+                        "%DATE%|r\t-\twill be replaced by the current date (in the format you chose below)!\n|c" ..
+                        GW.COLOR ..
+                        "%PLAYER%|r\t-\twill be replaced by the account name of the player!\n|c" ..
+                        GW.COLOR .. "%GUILD%|r\t-\twill be replaced by the guilds name!",
                     width = "full" --or "half" (optional)
                 },
                 [2] = {
@@ -688,7 +785,7 @@ function GW.CreateSettingsWindow()
                     getFunc = function()
                         return st.selectedGuild
                     end,
-                    setFunc = function(guildId)
+                    setFunc = function( guildId )
                         selectedGuildId = guildId
                         st.selectedGuild = guildId
                     end,
@@ -700,10 +797,10 @@ function GW.CreateSettingsWindow()
                     tooltip = "Choose format of the date for the placeholder",
                     choices = dateTable,
                     disabled = function()
-                        if
-                            GW.GetPermission_Note(st.selectedGuild) == true or GW.GetPermission_Mail(st.selectedGuild) == true or
-                                GW.GetPermission_Chat(st.selectedGuild) == true
-                         then
+                        if GW.GetPermission_Note( st.selectedGuild ) == true or
+                            GW.GetPermission_Mail( st.selectedGuild ) == true or
+                            GW.GetPermission_Chat( st.selectedGuild ) == true
+                        then
                             return false
                         else
                             return true
@@ -714,7 +811,7 @@ function GW.CreateSettingsWindow()
                     getFunc = function()
                         return st.guilds[st.selectedGuild].settings.dateFormat
                     end,
-                    setFunc = function(dateFormat)
+                    setFunc = function( dateFormat )
                         st.guilds[st.selectedGuild].settings.dateFormat = dateFormat
                     end,
                     width = "full"
@@ -724,7 +821,7 @@ function GW.CreateSettingsWindow()
                     name = "Note alerts",
                     default = false,
                     disabled = function()
-                        if DoesPlayerHaveGuildPermission(st.selectedGuild, GUILD_PERMISSION_NOTE_EDIT) == true then
+                        if DoesPlayerHaveGuildPermission( st.selectedGuild, GUILD_PERMISSION_NOTE_EDIT ) == true then
                             return false
                         else
                             return true
@@ -735,7 +832,7 @@ function GW.CreateSettingsWindow()
                     getFunc = function()
                         return st.guilds[st.selectedGuild].settings.noteAlert
                     end,
-                    setFunc = function(value)
+                    setFunc = function( value )
                         st.guilds[st.selectedGuild].settings.noteAlert = value
                     end
                 },
@@ -748,7 +845,7 @@ function GW.CreateSettingsWindow()
                     name = "Application alerts",
                     default = false,
                     disabled = function()
-                        if DoesPlayerHaveGuildPermission(st.selectedGuild, GUILD_PERMISSION_MANAGE_APPLICATIONS) == true then
+                        if DoesPlayerHaveGuildPermission( st.selectedGuild, GUILD_PERMISSION_MANAGE_APPLICATIONS ) == true then
                             return false
                         else
                             return true
@@ -759,7 +856,7 @@ function GW.CreateSettingsWindow()
                     getFunc = function()
                         return st.guilds[st.selectedGuild].settings.applicationAlert
                     end,
-                    setFunc = function(value)
+                    setFunc = function( value )
                         st.guilds[st.selectedGuild].settings.applicationAlert = value
                     end
                 },
@@ -770,7 +867,7 @@ function GW.CreateSettingsWindow()
                     getFunc = function()
                         return st.guilds[st.selectedGuild].settings.applicationThreshold
                     end,
-                    setFunc = function(number)
+                    setFunc = function( number )
                         st.guilds[st.selectedGuild].settings.applicationThreshold = number
                     end,
                     width = "half",
@@ -792,7 +889,7 @@ function GW.CreateSettingsWindow()
                     getFunc = function()
                         return st.guilds[st.selectedGuild].settings.achievementThreshold
                     end,
-                    setFunc = function(number)
+                    setFunc = function( number )
                         st.guilds[st.selectedGuild].settings.achievementThreshold = number
                     end,
                     width = "half",
@@ -816,7 +913,7 @@ function GW.CreateSettingsWindow()
                     name = "Message Enabled",
                     default = false,
                     disabled = function()
-                        if GW.GetPermission_Chat(st.selectedGuild) == true then
+                        if GW.GetPermission_Chat( st.selectedGuild ) == true then
                             return false
                         else
                             return true
@@ -827,7 +924,7 @@ function GW.CreateSettingsWindow()
                     getFunc = function()
                         return st.guilds[st.selectedGuild].settings.messageEnabled
                     end,
-                    setFunc = function(value)
+                    setFunc = function( value )
                         st.guilds[st.selectedGuild].settings.messageEnabled = value
                     end
                 },
@@ -836,7 +933,7 @@ function GW.CreateSettingsWindow()
                     name = "Note Enabled",
                     default = false,
                     disabled = function()
-                        if GW.GetPermission_Note(st.selectedGuild) == true then
+                        if GW.GetPermission_Note( st.selectedGuild ) == true then
                             return false
                         else
                             return true
@@ -847,19 +944,20 @@ function GW.CreateSettingsWindow()
                     getFunc = function()
                         return st.guilds[st.selectedGuild].settings.noteEnabled
                     end,
-                    setFunc = function(value)
+                    setFunc = function( value )
                         st.guilds[st.selectedGuild].settings.noteEnabled = value
                     end
                 },
                 [12] = {
                     type = "editbox",
                     name = "ChatMessage",
-                    tooltip = "This message will be pasted in your chat!\n\nMaximum is " .. MAX_TEXT_CHAT_INPUT_CHARACTERS .. " Characters!",
+                    tooltip = "This message will be pasted in your chat!\n\nMaximum is " ..
+                        MAX_TEXT_CHAT_INPUT_CHARACTERS .. " Characters!",
                     isExtraWide = true,
                     isMultiline = true,
                     maxChars = MAX_TEXT_CHAT_INPUT_CHARACTERS,
                     disabled = function()
-                        if GW.GetPermission_Chat(st.selectedGuild) == true then
+                        if GW.GetPermission_Chat( st.selectedGuild ) == true then
                             return false
                         else
                             return true
@@ -869,7 +967,7 @@ function GW.CreateSettingsWindow()
                     getFunc = function()
                         return st.guilds[st.selectedGuild].settings.messageBody
                     end,
-                    setFunc = function(text)
+                    setFunc = function( text )
                         st.guilds[st.selectedGuild].settings.messageBody = text
                     end
                 },
@@ -881,7 +979,7 @@ function GW.CreateSettingsWindow()
                     isExtraWide = true,
                     isMultiline = true,
                     disabled = function()
-                        if GW.GetPermission_Note(st.selectedGuild) == true then
+                        if GW.GetPermission_Note( st.selectedGuild ) == true then
                             return false
                         else
                             return true
@@ -891,7 +989,7 @@ function GW.CreateSettingsWindow()
                     getFunc = function()
                         return st.guilds[st.selectedGuild].settings.noteBody
                     end,
-                    setFunc = function(text)
+                    setFunc = function( text )
                         st.guilds[st.selectedGuild].settings.noteBody = text
                     end
                 },
@@ -906,7 +1004,7 @@ function GW.CreateSettingsWindow()
                     name = "Mail Enabled",
                     default = false,
                     disabled = function()
-                        if GW.GetPermission_Mail(st.selectedGuild) == true then
+                        if GW.GetPermission_Mail( st.selectedGuild ) == true then
                             return false
                         else
                             return true
@@ -917,7 +1015,7 @@ function GW.CreateSettingsWindow()
                     getFunc = function()
                         return st.guilds[st.selectedGuild].settings.mailEnabled
                     end,
-                    setFunc = function(value)
+                    setFunc = function( value )
                         st.guilds[st.selectedGuild].settings.mailEnabled = value
                     end
                 },
@@ -930,7 +1028,7 @@ function GW.CreateSettingsWindow()
                     reference = "GW_SubjectWindow",
                     maxChars = MAIL_MAX_SUBJECT_CHARACTERS,
                     disabled = function()
-                        if GW.GetPermission_Mail(st.selectedGuild) == true then
+                        if GW.GetPermission_Mail( st.selectedGuild ) == true then
                             return false
                         else
                             return true
@@ -939,7 +1037,7 @@ function GW.CreateSettingsWindow()
                     getFunc = function()
                         return st.guilds[st.selectedGuild].settings.mailSubject
                     end,
-                    setFunc = function(text)
+                    setFunc = function( text )
                         st.guilds[st.selectedGuild].settings.mailSubject = text
                     end
                 },
@@ -952,7 +1050,7 @@ function GW.CreateSettingsWindow()
                     reference = "ITTGW_LAM_Editbox_MailText",
                     maxChars = MAIL_MAX_BODY_CHARACTERS,
                     disabled = function()
-                        if GW.GetPermission_Mail(st.selectedGuild) == true then
+                        if GW.GetPermission_Mail( st.selectedGuild ) == true then
                             return false
                         else
                             return true
@@ -961,7 +1059,7 @@ function GW.CreateSettingsWindow()
                     getFunc = function()
                         return st.guilds[st.selectedGuild].settings.mailBody
                     end,
-                    setFunc = function(text)
+                    setFunc = function( text )
                         MailPreview()
                         st.guilds[st.selectedGuild].settings.mailBody = text
                     end
@@ -989,7 +1087,7 @@ function GW.CreateSettingsWindow()
                     name = "|cffffffBackup options",
                     reference = "GW_BackupOptions",
                     disabled = function()
-                        if GW.GetPermission_Note(st.selectedGuild) == true then
+                        if GW.GetPermission_Note( st.selectedGuild ) == true then
                             return false
                         else
                             return true
@@ -1008,7 +1106,7 @@ function GW.CreateSettingsWindow()
                             getFunc = function()
                                 return st.guilds[st.selectedGuild].settings.autobackup
                             end,
-                            setFunc = function(newValue)
+                            setFunc = function( newValue )
                                 st.guilds[st.selectedGuild].settings.autobackup = newValue
                             end
                         }
@@ -1044,7 +1142,7 @@ function GW.CreateSettingsWindow()
             getFunc = function()
                 return false
             end,
-            setFunc = function(value)
+            setFunc = function( value )
                 return false
             end,
             default = false,
@@ -1052,8 +1150,8 @@ function GW.CreateSettingsWindow()
             reference = "ITT_HideMePlsGW"
         }
     }
-    CALLBACK_MANAGER:RegisterCallback("LAM-PanelControlsCreated", LAMControlsCreatedCallbackFunc)
-    LAM:RegisterOptionControls("GhostwriterOptions", optionsData)
+    CALLBACK_MANAGER:RegisterCallback( "LAM-PanelControlsCreated", LAMControlsCreatedCallbackFunc )
+    LAM:RegisterOptionControls( "GhostwriterOptions", optionsData )
 end
 
 ----------------------
@@ -1063,7 +1161,7 @@ local function OnPlayerActivated()
     GetGuilds()
     GW.SetupGuilds()
     firstLoad()
-    GW.myGuildColumn:SetGuildFilter(GW.GuildsWithPermisson)
+    GW.myGuildColumn:SetGuildFilter( GW.GuildsWithPermisson )
     GW.ChatReady = true
 end
 
@@ -1071,7 +1169,7 @@ end
 ---Initialize Function--
 ------------------------
 function GW.Initialize()
-    ITTsGhostwriter.Vars = ZO_SavedVars:NewAccountWide("GWSettings", GW.variableVersion, nil, defaults, GetWorldName())
+    ITTsGhostwriter.Vars = ZO_SavedVars:NewAccountWide( "GWSettings", GW.variableVersion, nil, defaults, GetWorldName() )
     st = ITTsGhostwriter.Vars
 
     HideBackupButton()
@@ -1086,11 +1184,14 @@ function GW.Initialize()
 
     GW.RosterRow()
     ITTsGhostwriter.CreateSettingsWindow()
-    EVENT_MANAGER:UnregisterForEvent(GW.name, EVENT_ADD_ON_LOADED)
-    EVENT_MANAGER:RegisterForEvent(GW.name, EVENT_GUILD_MEMBER_ADDED, OnMemberJoin)
+    EVENT_MANAGER:UnregisterForEvent( GW.name, EVENT_ADD_ON_LOADED )
+    EVENT_MANAGER:RegisterForEvent( GW.name, EVENT_GUILD_MEMBER_ADDED, OnMemberJoin )
 end
+
 ----------
 --Events--
 ----------
-EVENT_MANAGER:RegisterForEvent(GW.name, EVENT_ADD_ON_LOADED, ITTsGhostwriter.OnAddOnLoaded)
-EVENT_MANAGER:RegisterForEvent(GW.name, EVENT_PLAYER_ACTIVATED, OnPlayerActivated)
+
+EVENT_MANAGER:RegisterForEvent( GW.name, EVENT_TRIBUTE_GAME_FLOW_STATE_CHANGE, GW.TributeMatchCheck )
+EVENT_MANAGER:RegisterForEvent( GW.name, EVENT_ADD_ON_LOADED, ITTsGhostwriter.OnAddOnLoaded )
+EVENT_MANAGER:RegisterForEvent( GW.name, EVENT_PLAYER_ACTIVATED, OnPlayerActivated )
