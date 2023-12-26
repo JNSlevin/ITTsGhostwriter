@@ -1,22 +1,20 @@
 local GW =
-ITTsGhostwriter or
+    ITTsGhostwriter or
     {
         name = "ITTsGhostwriter",
-        version = 1.4,
-        variableVersion = 194
+
     }
 ITTsGhostwriter = GW
 
-local worldName = GetWorldName()
 local chat = LibChatMessage( "ITTsGhostwriter", "GW" )
--- local chat = chat:SetTagColor(GW.COLOR)
+local logger = GWLogger:New( "Utils" )
 -----------
 --CONSTANTS
 -----------
 
 local NOTE_PATTERN = "|cGWnote|r"
 local MAIL_PATTERN = "|cGWmail|r"
-local CHAT_PATTERN = "|cCWchat|r"
+local CHAT_PATTERN = "|cGWchat|r"
 local NOTE_AND_MAIL_PATTERN = "|cGWnoma|r"
 local NOTE_AND_CHAT_PATTERN = "|cGWnoch|r"
 local MAIL_AND_CHAT_PATTERN = "|cGWmach|r"
@@ -24,13 +22,23 @@ local NOTE_MAIL_AND_CHAT_PATTERN = "|cGWxxxx|r"
 --* LibGuildRoster needs one guildId to filter, if its nil it will show in all guilds, so the dummy guildId is added with a number that will most likely never be used by an actual guild
 GW.GuildsWithPermisson = { 999999999999999 }
 GW.shouldHideFor = {}
+--------------------
+--helper functions--
+--------------------
+function GW.PrintChatMessage( message, ... )
+    if ... then
+        chat:Printf( message, ... )
+    else
+        chat:Print( message )
+    end
+end
 
 ------------------
 --CutomGuildLink--
 ------------------
-
 function GW.GetGuildColor( i )
-    local r, g, b = GetChatCategoryColor( _G["CHAT_CATEGORY_GUILD_" .. tostring( i )] )
+    local r, g, b = GetChatCategoryColor( _G
+        [ "CHAT_CATEGORY_GUILD_" .. tostring( i ) ] )
     local colorObject = ZO_ColorDef:New( r, g, b )
 
     return {
@@ -40,279 +48,195 @@ function GW.GetGuildColor( i )
 end
 
 function GW.CreateGuildLink( guildId )
-    -- local alliance = GetGuildAlliance(guildId)
     local gIndex = GW.GetGuildIndex( guildId )
     local name = GetGuildName( guildId )
     local color = GW.GetGuildColor( gIndex )
-    --[[ allianceIcon = {}
-    if alliance == 1 then
-        allianceIcon = "|t24:24:/esoui/art/journal/gamepad/gp_questtypeicon_guild.dds|t"
-    elseif alliance == 2 then
-        allianceIcon = "|t16:16/esoui/art/stats/alliancebadge_ebonheart.dds|t"
-    elseif alliance == 3 then
-        allianceIcon = "|t24:24:/esoui/art/guild/guildhistory_indexicon_guild_down.dds|t"
-    end ]]
-    local guildLink = "|c" .. color.hex .. "[|H1:gwguild::" .. guildId .. "|h " .. name .. " ]|h|r"
-
+    local guildLink = string.format( "|c%s[|H1:gwguild::%s|h %s ]|h|r",
+                                     color.hex, guildId, name )
     return guildLink
 end
 
-function GW.HandleClickEvent( rawLink, mouseButton, linkText, linkStyle, linkType, guildId, ... )
-    local gIndex = GW.GetGuildIndex( guildId )
-    if linkType == "gwguild" then
-        -- GUILD_SELECTOR:SelectGuildByIndex(gIndex)
-        -- MAIN_MENU_KEYBOARD:ShowScene("guildHome")
-        if mouseButton == MOUSE_BUTTON_INDEX_LEFT then
-            GUILD_SELECTOR:SelectGuildByIndex( gIndex )
-            MAIN_MENU_KEYBOARD:ShowScene( "guildHome" )
+local function handleMouseButton(
+    guildId,
+    gIndex,
+    mouseButton,
+    scene,
+    callback )
+    if mouseButton then
+        GUILD_SELECTOR:SelectGuildByIndex( gIndex )
+        MAIN_MENU_KEYBOARD:ShowScene( scene )
 
-            return true
+        if callback then
+            zo_callLater( callback, 250 )
         end
 
-        if mouseButton == MOUSE_BUTTON_INDEX_MIDDLE then
-            --[[  zo_callLater(
-                function()
-                    GUILD_SELECTOR:SelectGuildByIndex(gIndex)
-                end,
-                200
-            ) ]]
-            if DoesPlayerHaveGuildPermission( guildId, GUILD_PERMISSION_MANAGE_APPLICATIONS ) == true then
-                GUILD_SELECTOR:SelectGuildByIndex( gIndex )
-                MAIN_MENU_KEYBOARD:ShowScene( "guildRecruitmentKeyboard" )
-                -- MAIN_MENU_KEYBOARD:ToggleSceneGroup("guildsSceneGroup", "guildRecruitmentKeyboard")
-                zo_callLater(
-                    function()
-                        GUILD_RECRUITMENT_KEYBOARD:ShowApplicationsList()
-                    end,
-                    250
-                )
-            else
-                zo_callLater(
-                    function()
-                        MAIN_MENU_KEYBOARD:ShowScene( "guildRoster" )
-                    end,
-                    50
-                )
-            end
+        return true
+    end
+end
 
+function GW.HandleClickEvent(
+    rawLink,
+    mouseButton,
+    linkText,
+    linkStyle,
+    linkType,
+    guildId, ... )
+    local gIndex = GW.GetGuildIndex( guildId )
+    if linkType == "gwguild" then
+        if handleMouseButton( guildId, gIndex, mouseButton == MOUSE_BUTTON_INDEX_LEFT, "guildHome" ) then return true end
+
+        if handleMouseButton( guildId, gIndex, mouseButton == MOUSE_BUTTON_INDEX_MIDDLE, "guildRecruitmentKeyboard", function()
+                GUILD_RECRUITMENT_KEYBOARD:ShowApplicationsList()
+                ClearGuildHasNewApplicationsNotification( guildId )
+            end ) then
             return true
         end
 
         if mouseButton == MOUSE_BUTTON_INDEX_RIGHT then
             ClearMenu()
 
-            AddCustomMenuItem(
-                "Show Guild Roster",
-                function()
-                    GUILD_SELECTOR:SelectGuildByIndex( gIndex )
-                    MAIN_MENU_KEYBOARD:ShowScene( "guildRoster" )
-                    --[[ zo_callLater(
-                        function()
-                            GUILD_SELECTOR:SelectGuildByIndex(gIndex)
-                        end,
-                        200
-                    ) ]]
-                end
-            )
-            AddCustomMenuItem(
-                "Show Guild Ranks",
-                function()
-                    GUILD_SELECTOR:SelectGuildByIndex( gIndex )
-                    MAIN_MENU_KEYBOARD:ShowScene( "guildRanks" )
-                    --[[ zo_callLater(
-                        function()
-                            GUILD_SELECTOR:SelectGuildByIndex(gIndex)
-                        end,
-                        200
-                    ) ]]
-                end
-            )
-            if DoesPlayerHaveGuildPermission( guildId, GUILD_PERMISSION_MANAGE_APPLICATIONS ) == true then
-                AddCustomMenuItem(
-                    "Show Guild Recruitment",
-                    function()
-                        GUILD_SELECTOR:SelectGuildByIndex( gIndex )
-                        MAIN_MENU_KEYBOARD:ShowScene( "guildRecruitmentKeyboard" )
-                        --[[ zo_callLater(
-                        function()
-                            GUILD_SELECTOR:SelectGuildByIndex(gIndex)
-                        end,
-                        200
-                    ) ]]
-                    end
-                )
+            local menuItems = {
+                { "Show Guild Roster",  "guildRoster" },
+                { "Show Guild Ranks",   "guildRanks" },
+                { "Show Guild History", "guildHistory" }
+            }
+
+            if DoesPlayerHaveGuildPermission( guildId, GUILD_PERMISSION_MANAGE_APPLICATIONS ) then
+                table.insert( menuItems,
+                              {
+                                  "Show Guild Recruitment",
+                                  "guildRecruitmentKeyboard"
+                              } )
             end
 
-            if DoesPlayerHaveGuildPermission( guildId, GUILD_PERMISSION_EDIT_HERALDRY ) == true then
-                AddCustomMenuItem(
-                    "Show Guild Heraldry",
-                    function()
-                        GUILD_SELECTOR:SelectGuildByIndex( gIndex )
-                        MAIN_MENU_KEYBOARD:ShowScene( "guildHeraldry" )
-                        --[[ zo_callLater(
-                        function()
-                            GUILD_SELECTOR:SelectGuildByIndex(gIndex)
-                        end,
-                        200
-                    ) ]]
-                    end
-                )
+            if DoesPlayerHaveGuildPermission( guildId, GUILD_PERMISSION_EDIT_HERALDRY ) then
+                table.insert( menuItems,
+                              {
+                                  "Show Guild Heraldry",
+                                  "guildHeraldry"
+                              } )
             end
 
-            AddCustomMenuItem(
-                "Show Guild History",
-                function()
+            for _, item in ipairs( menuItems ) do
+                AddCustomMenuItem( item[ 1 ], function()
                     GUILD_SELECTOR:SelectGuildByIndex( gIndex )
-                    MAIN_MENU_KEYBOARD:ShowScene( "guildHistory" )
-                    --[[ zo_callLater(
-                        function()
-                            GUILD_SELECTOR:SelectGuildByIndex(gIndex)
-                        end,
-                        200
-                    ) ]]
-                end
-            )
+                    MAIN_MENU_KEYBOARD:ShowScene( item[ 2 ] )
+                end )
+            end
+
             ShowMenu()
             return true
         end
     end
 end
 
-LINK_HANDLER:RegisterCallback( LINK_HANDLER.LINK_MOUSE_UP_EVENT, GW.HandleClickEvent )
+LINK_HANDLER:RegisterCallback( LINK_HANDLER.LINK_MOUSE_UP_EVENT,
+                               GW.HandleClickEvent )
+-------------------------
+----Format message-------
+-------------------------
+function GW.FormatMessage( template, playerName, guildName, date )
+    if not template or template == "" then return end
+    local formattedMessage = string.gsub( template, "%%PLAYER%%", playerName )
+    formattedMessage = string.gsub( formattedMessage, "%%GUILD%%", guildName )
+    return string.gsub( formattedMessage, "%%DATE%%", date )
+end
 
 -------------------------
 --CheckCustomPermission--
 -------------------------
 
-function GW.GetPermission_Note( guildId )
+local GetNumGuildMembers = GetNumGuildMembers
+local GetGuildMemberInfo = GetGuildMemberInfo
+local PlainStringFind = PlainStringFind
+local GetDisplayName = GetDisplayName
+
+local function checkPermission( guildId, patterns )
     local playerName = GetDisplayName()
     local numMembers = GetNumGuildMembers( guildId )
 
     for i = 1, numMembers do
-        local name, memberNote, rankIndex, _, _ = GetGuildMemberInfo( guildId, i )
+        local name, memberNote = GetGuildMemberInfo( guildId, i )
         if playerName == name then
-            if PlainStringFind( memberNote, NOTE_PATTERN ) == true then
-                return true
-            elseif PlainStringFind( memberNote, NOTE_AND_MAIL_PATTERN ) == true then
-                return true
-            elseif PlainStringFind( memberNote, NOTE_AND_CHAT_PATTERN ) == true then
-                return true
-            elseif PlainStringFind( memberNote, NOTE_MAIL_AND_CHAT_PATTERN ) == true then
-                return true
-            else
-                return false
+            for _, pattern in ipairs( patterns ) do
+                if PlainStringFind( memberNote, pattern ) then
+                    return true
+                end
             end
+            break
         end
     end
+
+    return false
+end
+
+function GW.GetPermission_Note( guildId )
+    return checkPermission( guildId,
+                            {
+                                NOTE_PATTERN,
+                                NOTE_AND_MAIL_PATTERN,
+                                NOTE_AND_CHAT_PATTERN,
+                                NOTE_MAIL_AND_CHAT_PATTERN
+                            } )
 end
 
 function GW.GetPermission_Chat( guildId )
-    local playerName = GetDisplayName()
-    local numMembers = GetNumGuildMembers( guildId )
-
-    for i = 1, numMembers do
-        local name, memberNote, rankIndex, _, _ = GetGuildMemberInfo( guildId, i )
-        if playerName == name then
-            if PlainStringFind( memberNote, CHAT_PATTERN ) == true then
-                return true
-            elseif PlainStringFind( memberNote, MAIL_AND_CHAT_PATTERN ) == true then
-                return true
-            elseif PlainStringFind( memberNote, NOTE_AND_CHAT_PATTERN ) == true then
-                return true
-            elseif PlainStringFind( memberNote, NOTE_MAIL_AND_CHAT_PATTERN ) == true then
-                return true
-            else
-                return false
-            end
-        end
-    end
+    return checkPermission( guildId,
+                            {
+                                CHAT_PATTERN,
+                                MAIL_AND_CHAT_PATTERN,
+                                NOTE_AND_CHAT_PATTERN,
+                                NOTE_MAIL_AND_CHAT_PATTERN
+                            } )
 end
 
 function GW.GetPermission_Mail( guildId )
-    local playerName = GetDisplayName()
-    local numMembers = GetNumGuildMembers( guildId )
-
-    for i = 1, numMembers do
-        local name, memberNote, rankIndex, _, _ = GetGuildMemberInfo( guildId, i )
-        if playerName == name then
-            if PlainStringFind( memberNote, MAIL_PATTERN ) == true then
-                return true
-            elseif PlainStringFind( memberNote, NOTE_AND_MAIL_PATTERN ) == true then
-                return true
-            elseif PlainStringFind( memberNote, MAIL_AND_CHAT_PATTERN ) == true then
-                return true
-            elseif PlainStringFind( memberNote, NOTE_MAIL_AND_CHAT_PATTERN ) == true then
-                return true
-            else
-                return false
-            end
-        end
-    end
-end
-
---[[ function writePermissionNote(guildId, playerName, perm)
-    local index = GetGuildMemberIndexFromDisplayName(guildId, playerName)
-    local name, note, rankIndex, _, _ = GetGuildMemberInfo(guildId, index)
-    local link = GW.CreateGuildLink(guildId)
-    -- local contents = (identifier .. note)
-    -- string.gsub(text, "|cGW(.-)|r", "|cGWnote|r")
-    if name ~= playerName then
-        chat:Print("Player not found in " .. link)
-        return
-    end
-    if perm == noting then
-        -- d("test")
-        contents = string.gsub(note, "|cGW(.-)|r", NOTE_PATTERN)
-        contents = (NOTE_PATTERN .. note)
-    else
-        -- contents = (NOTE_PATTERN .. note)
-        contents = string.gsub(note, "|cGW(.-)|r", NOTE_PATTERN)
-    end
-
-    SetGuildMemberNote(guildId, index, contents)
-end ]]
-function GW.SetupGuilds()
-    for i = 1, GetNumGuilds() do
-        -- local gIndex = GetGuildIndex(i)
-        local guildId = GetGuildId( i )
-        if GW.GetPermission_Note( guildId ) == true then
-            table.insert( GW.GuildsWithPermisson, guildId )
-            GW.shouldHideFor[guildId] = false
-        else
-            GW.shouldHideFor[guildId] = true
-        end
-    end
-    --d(GW.GuildsWithPermisson)
+    return checkPermission( guildId,
+                            {
+                                MAIL_PATTERN,
+                                NOTE_AND_MAIL_PATTERN,
+                                MAIL_AND_CHAT_PATTERN,
+                                NOTE_MAIL_AND_CHAT_PATTERN
+                            } )
 end
 
 --------------
 --Automation--
 --------------
-local noteCount = 0
-local mailCount = 0
-function GW.writeMail( name, subject, body )
-    mailCount = mailCount + 1
-
+local pendingMailCount = 0
+local mailboxOpen = false
+--We added the delay to the player join event. we dont actually need this async nonsense here but it doesnt hurt either
+function GW.writeMail( recipientName, subject, body )
+    pendingMailCount = pendingMailCount + 1
+    logger:Log( "trying to write mail to %s", recipientName )
+    logger:Log( 2, "subject: %s \n body: %s", subject, body )
     zo_callLater(
         function()
-            RequestOpenMailbox()
-            SendMail( name, subject, body )
+            if not mailboxOpen then
+                RequestOpenMailbox()
+                mailboxOpen = true
+            end
+
+            SendMail( recipientName, subject, body )
+
             zo_callLater(
                 function()
-                    CloseMailbox()
+                    pendingMailCount = pendingMailCount - 1
+
+                    if pendingMailCount == 0 and mailboxOpen then
+                        CloseMailbox()
+                        mailboxOpen = false
+                    end
                 end,
                 1000
             )
         end,
-        (10000 * mailCount) - 10000
+        (10000 * pendingMailCount) - 10000
     )
-    zo_callLater(
-        function()
-            mailCount = mailCount - 1
-        end,
-        10000
-    )
+    logger:Log( "writeMail: pendingMailCount: %d", pendingMailCount )
 end
+
+local noteCount = 0
 
 function GW.writeNote( guildId, memberIndex, note )
     noteCount = noteCount + 1
@@ -326,7 +250,7 @@ function GW.writeNote( guildId, memberIndex, note )
         function()
             noteCount = noteCount - 1
         end,
-        10000
+        10000 * noteCount
     )
 end
 
@@ -335,12 +259,11 @@ end
 ----------------------------------------------------------
 
 function GW.GetGuildIndex( guildId )
-    local numg = 0
+    local idNum = tonumber( guildId )
 
     for gi = 1, GetNumGuilds() do
         local gcheck = GetGuildId( gi )
-        local idNum = tonumber( guildId )
-        if (idNum == gcheck) then
+        if idNum == gcheck then
             return gi
         end
     end
