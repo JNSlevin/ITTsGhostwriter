@@ -29,6 +29,21 @@ local DIALOG_GLOW_EDGE_SIZE = 32
 -----------
 local logger = GWLogger:New( "Interface" )
 -----------
+--Helpers--
+-----------
+-- Helper function for sorting categories
+local function sortCategories( categories )
+    table.sort( categories, function( a, b )
+        local aPriority = a.priority == 0 and -math.huge or a.priority
+        local bPriority = b.priority == 0 and -math.huge or b.priority
+        if aPriority == bPriority then
+            return a.name < b.name
+        else
+            return aPriority > bPriority
+        end
+    end )
+end
+-----------
 --UI ------
 -----------
 function ITTsGhostwriter.TogglePreview()
@@ -95,6 +110,7 @@ function UpdatePreview()
     end
     composeBox:SetHeight( math.max( textHeight, EDITBOX_BACKDROP_HEIGHT ) ) -- Set the height to be the maximum of the text height and the backdrop height
     DisableButtonIfNotLua( composeBox:GetText() )
+    GetControl( "GW_NotePad_Count" ):SetText( #composeBox:GetText() )
 end
 
 function UpdateSizes()
@@ -243,6 +259,197 @@ local function createEditBox()
     return editBox
 end
 
+---------------------
+--Mailbox Additions--
+---------------------
+----ScrollList
+--------------
+local noteList = {}
+ITTsGhostwriter.noteList = noteList
+function noteList.CreateScrollListControl()
+    noteList.controlScrollList = WINDOW_MANAGER:CreateControlFromVirtual( "ITTsSendMailExtension_Scroll",
+                                                                          ITTsSendMailExtension,
+                                                                          "ZO_ScrollList" )
+    noteList.controlScrollList:SetDimensions( 200, 375 )
+    noteList.controlScrollList:SetAnchor( TOPLEFT, ITTsSendMailExtension_NoteEntries, TOPLEFT, 0, 0 )
+end
+
+function noteList.CreateDataType()
+    local control = noteList.controlScrollList
+    local typeId = 1
+    local templateName = "ZO_SelectableLabel"
+    local height = 25 -- height of the row, not the window
+    local setupFunction = noteList.LayoutRow
+    local hideCallback = nil
+    local dataTypeSelectSound = nil
+    local resetControlCallback = nil
+    local selectTemplate = "ZO_ThinListHighlight"
+    local selectCallback = noteList.OnRowSelect
+    ZO_ScrollList_AddDataType( control, typeId, templateName, height, setupFunction, hideCallback, dataTypeSelectSound,
+                               resetControlCallback )
+    ZO_ScrollList_EnableSelection( control, selectTemplate, selectCallback )
+end
+
+function noteList.Populate( category )
+    category = category:match( "|t.-%|t (.*)" )
+    local notes = CM:GetCategory( category ):GetAllNotes()
+    local data = {}
+    for key, note in pairs( notes ) do
+        data[ #data + 1 ] = {
+            name = note:GetName(),
+            content = note:GetContent(),
+        }
+        logger:Log( 2, "Populate: Adding note %s", note:GetName() )
+        logger:Log( 2, "Populate: Note content %s", note:GetContent() )
+    end
+    return data
+end
+
+function noteList.UpdateList( control, data, rowType )
+    local dataCopy = ZO_DeepTableCopy( data )
+    local dataList = ZO_ScrollList_GetDataList( control )
+
+    ZO_ScrollList_Clear( control )
+
+    for key, value in ipairs( dataCopy ) do
+        -- Ensure value is a table with the appropriate fields
+        if type( value ) == "string" then
+            value = { t = key, name = value, description = "", texture = "" }
+        end
+
+        local entry = ZO_ScrollList_CreateDataEntry( rowType, value )
+        table.insert( dataList, entry ) -- By using table.insert, we add to whatever data may already be there.
+    end
+
+    table.sort( dataList, function( a, b ) return a.data.name < b.data.name end )
+    ZO_ScrollList_Commit( control )
+end
+
+function noteList.LayoutRow( rowControl, data, scrollList )
+    rowControl:SetFont( "ZoFontGame" )
+    rowControl:SetMaxLineCount( 1 ) -- Forces the text to only use one row.  If it goes longer, the extra will not display.
+    rowControl:SetText( data.name )
+    rowControl:SetHandler( "OnMouseUp", function() ZO_ScrollList_MouseClick( scrollList, rowControl ) end )
+    rowControl:SetHandler( "OnMouseEnter", function( self )
+        rowControl:SetColor( 1, 1, 1, 1 )
+        if data.content == "" then return end
+        InitializeTooltip( InformationTooltip, self, TOPRIGHT, 0, 0,
+                           BOTTOMLEFT )
+        SetTooltipText( InformationTooltip, data.content )
+    end )
+    rowControl:SetHandler( "OnMouseExit", function()
+        rowControl:SetColor( GetInterfaceColor( INTERFACE_COLOR_TYPE_TEXT_COLORS, INTERFACE_TEXT_COLOR_NORMAL ) )
+        ClearTooltip( InformationTooltip )
+    end )
+
+
+    --[[    rowControl:SetHandler( "OnMouseEnter",
+                           function( rowControl ) ZO_Tooltips_ShowTextTooltip( rowControl, LEFT, tooltip ) end )
+    rowControl:SetHandler( "OnMouseExit", function( rowControl ) ZO_Tooltips_HideTextTooltip() end )
+ ]]
+end
+
+function noteList.OnRowSelect( previouslySelectedData, selectedData, reselectingDuringRebuild )
+    local subject = GetControl( "ZO_MailSendSubjectField" )
+    local body = GetControl( "ZO_MailSendBodyField" )
+    if selectedData then
+        subject:SetText( selectedData.name )
+        body:SetText( selectedData.content )
+    else
+        subject:SetText( "" )
+        body:SetText( "" )
+    end
+end
+
+local function onSendMailShown( oldState, newState )
+    local bg = GetControl( "ZO_SharedRightBackgroundLeft" )
+    local control = GetControl( "ITTsSendMailExtension" )
+    local hidden = control:IsHidden()
+    if newState == "showing" and not hidden then
+        bg:SetWidth( 1400 )
+        bg:SetAnchor( TOPLEFT, ZO_SharedRightBackground, TOPLEFT, -275, -75 )
+    elseif newState == "hidden" then
+        bg:SetWidth( 1024 )
+        bg:SetAnchor( TOPLEFT, ZO_SharedRightBackground, TOPLEFT, -35, -75 )
+        control:SetHidden( true )
+        ITTsMailExtensionButton:SetNormalTexture( "/esoui/art/tradinghouse/tradinghouse_trophy_runebox_fragment_up.dds" )
+        ITTsMailExtensionButton:SetPressedTexture( "/esoui/art/tradinghouse/tradinghouse_trophy_runebox_fragment_down.dds" )
+    end
+    --[[
+    local scene = SCENE_MANAGER:GetScene( "mailSend" )
+    scene:RegisterCallback( "StateChange", sceneChange ) ]]
+end
+
+local scene = SCENE_MANAGER:GetScene( "mailSend" )
+scene:RegisterCallback( "StateChange", onSendMailShown )
+
+------
+--ComboBox
+-------
+local function populateEntryControl( category )
+    -- Get the notes from the selected category
+    local notes = noteList.Populate( category )
+
+    -- Update the scroll list with the notes
+    local control = noteList.controlScrollList
+    local rowType = 1 -- replace with the actual rowType if it's not 1
+    noteList.UpdateList( control, notes, rowType )
+end
+local function populateComboBox()
+    local control = GetControl( "ITTsSendMailExtension_CategoryComboBox" )
+    local categories = {}
+    for categoryName, categoryData in pairs( CM:GetAllCategories() ) do
+        table.insert( categories, {
+            name = categoryName,
+            priority = categoryData.priority or 0
+        } )
+    end
+    sortCategories( categories ) -- Use the helper function to sort the categories
+    local object = ZO_ComboBox_ObjectFromContainer( control )
+    object:SetSelectedItemFont( "ZoFontGame" )
+    object:SetDropdownFont( "ZoFontGame" )
+    object:SetSortsItems( false ) -- Disable automatic sorting
+    object:SetSpacing( 4 )
+
+    local function callback()
+        local data = object:GetSelectedItemData()
+        db.settings.mailComboBoxLastSelectedItemIndex = data.index
+        populateEntryControl( data.name ) -- Call populateEntryControl with the selected category
+    end
+
+    for i = 1, #categories do
+        local iconIndex = CM:GetCategory( categories[ i ].name ):GetIconIndex()
+        local icon = ITTsGhostwriter.LookupIcons( iconIndex ).down
+        local categoryName = string.format( "|t100%%:100%%:%s|t %s", icon,
+                                            categories[ i ].name )
+        object:AddItem( {
+            index = i,
+            name = categoryName,
+            callback = callback,
+        } )
+    end
+end
+
+----------
+--button--
+----------
+function UI.OnMailButtonClicked( self )
+    local control = GetControl( "ITTsSendMailExtension" )
+    local hidden = control:IsHidden()
+    local bg = GetControl( "ZO_SharedRightBackgroundLeft" )
+    control:SetHidden( not hidden )
+    if hidden then
+        bg:SetWidth( 1400 )
+        bg:SetAnchor( TOPLEFT, ZO_SharedRightBackground, TOPLEFT, -275, -75 )
+        ITTsMailExtensionButton:SetNormalTexture( "/esoui/art/tradinghouse/tradinghouse_trophy_runebox_fragment_down.dds" )
+        ITTsMailExtensionButton:SetPressedTexture( "/esoui/art/tradinghouse/tradinghouse_trophy_runebox_fragment_up.dds" )
+    else
+        bg:SetWidth( 1024 )
+        bg:SetAnchor( TOPLEFT, ZO_SharedRightBackground, TOPLEFT, -35, -75 )
+        ITTsMailExtensionButton:SetNormalTexture( "/esoui/art/tradinghouse/tradinghouse_trophy_runebox_fragment_up.dds" )
+        ITTsMailExtensionButton:SetPressedTexture( "/esoui/art/tradinghouse/tradinghouse_trophy_runebox_fragment_down.dds" )
+    end
+end
 
 --------------
 -- CustomMenu
@@ -944,23 +1151,14 @@ local function AddCategoriesToTree( tree )
     -- Sort the categories by priority and name
     local sortedCategories = {}
     for categoryName, categoryData in pairs( db.settings.notes ) do
-        table.insert( sortedCategories,
-                      {
-                          name = categoryName,
-                          priority = categoryData.priority or 0
-                      } )
+        table.insert( sortedCategories, {
+            name = categoryName,
+            priority = categoryData.priority or 0
+        } )
     end
-    table.sort( sortedCategories, function( a, b )
-        -- Treat priority 0 as no priority
-        local aPriority = a.priority == 0 and -math.huge or a.priority
-        local bPriority = b.priority == 0 and -math.huge or b.priority
 
-        if aPriority == bPriority then
-            return a.name < b.name
-        else
-            return aPriority > bPriority
-        end
-    end )
+    -- Use the helper function to sort the categories
+    sortCategories( sortedCategories )
 
     -- Add the categories and nodes to the tree in sorted order
     for _, category in ipairs( sortedCategories ) do
@@ -1029,6 +1227,7 @@ local function createTree()
     tree:Commit()
     tree:SetExclusive( true )
 end
+
 
 ----Overrides
 
@@ -1112,12 +1311,16 @@ function UI:Initialize()
     createEditBox()
     createGlow()
     createShowUIButton()
-    GW_NotePad:SetAnchor( TOPLEFT, GuiRoot, TOPLEFT,
-                          db.settings.noteWindow.x, db.settings.noteWindow
-                          .y )
+    GW_NotePad:SetAnchor( TOPLEFT, GuiRoot, TOPLEFT, db.settings.noteWindow.x, db.settings.noteWindow.y )
     GW_NotePad_Preview:SetHidden( db.settings.noteWindow.previewHidden )
     GW_NotePad_NoteTitle_Preview:SetHidden( db.settings.noteWindow
         .previewHidden )
     UpdateSizes()
     GW_NotePad:SetHidden( true )
+    populateComboBox()
+    noteList.CreateScrollListControl()
+    noteList.CreateDataType()
+    local control = GetControl( "ITTsSendMailExtension_CategoryComboBox" )
+    local object = ZO_ComboBox_ObjectFromContainer( control )
+    object:SelectItemByIndex( db.settings.mailComboBoxLastSelectedItemIndex or 1 )
 end

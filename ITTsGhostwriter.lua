@@ -21,6 +21,7 @@ local defaults = {
     firstload = true,
     selectedGuild = GetGuildId( 1 ),
     lastOpenedCategory = "",
+    mailComboBoxLastSelectedItemIndex = 1,
     noteWindow = {
         x = 0,
         y = 0,
