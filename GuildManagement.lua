@@ -196,17 +196,7 @@ local function AddGuildRosterMenuEntry( control, _, _ )
             end,
             visible = hasNotePermission
         },
-        {
-            label = "Initiate welcome sequence",
-            callback = function()
-                chat( "Welcome sequence initiated for %s in %s",
-                      data.displayName, GetGuildName( guildId ) )
-                GW.events.OnMemberJoin( _, guildId, data.displayName )
-            end,
-            visible = hasNotePermission or hasMailPermission or
-                hasChatPermission,
-            disabled = not (guildSettings.noteEnabled or guildSettings.mailEnabled or guildSettings.chatEnabled)
-        },
+
         {
             label = "Open guild note in Notepad",
             callback = function() openNoteInNotepad( guildId, data.displayName ) end,
@@ -218,6 +208,17 @@ local function AddGuildRosterMenuEntry( control, _, _ )
             callback = function() openSavedNoteInNotePad( guildId, data.displayName ) end,
             visible = hasNotePermission,
             disabled = not guildSettings.noteEnabled
+        },
+        {
+            label = "Initiate welcome sequence",
+            callback = function()
+                chat( "Welcome sequence initiated for %s in %s",
+                      data.displayName, GetGuildName( guildId ) )
+                GW.events.OnMemberJoin( _, guildId, data.displayName )
+            end,
+            visible = hasNotePermission or hasMailPermission or
+                hasChatPermission,
+            disabled = not (guildSettings.noteEnabled or guildSettings.mailEnabled or guildSettings.chatEnabled)
         },
 
     }
@@ -239,16 +240,16 @@ local function getIconColor( savedNote, currentNote )
     local iconTemplate =
     "|c%s|t24:24:esoui/art/miscellaneous/check_icon_32.dds:inheritcolor|t|r"
 
-    if savedNote == nil and currentNote == "" then
-        return ""                                      -- No icon
-    elseif savedNote == nil and currentNote ~= "" then
-        return string.format( iconTemplate, "FFBF00" ) -- Yellow icon
-    elseif savedNote ~= nil and currentNote == "" then
-        return string.format( iconTemplate, "585858" ) -- Grey icon
-    elseif savedNote == currentNote then
+    if savedNote == currentNote and currentNote ~= "" then
         return string.format( iconTemplate, "00ff00" ) -- Green icon
-    else
+    elseif (savedNote == nil or savedNote == "") and currentNote ~= "" then
+        return string.format( iconTemplate, "585858" ) -- Grey icon
+    elseif (savedNote ~= nil and savedNote ~= "") and currentNote == "" then
         return string.format( iconTemplate, "FF0000" ) -- Red icon
+    elseif savedNote ~= currentNote and currentNote ~= "" then
+        return string.format( iconTemplate, "FFBF00" ) -- Yellow icon
+    else
+        return ""                                      -- No icon
     end
 end
 function GW.RosterRow()
