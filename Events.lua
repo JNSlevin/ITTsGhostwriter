@@ -94,54 +94,7 @@ end
 local async = LibAsync
 local task = async:Create( "ITTsGhostwriter/WelcomeTask" )
 
-local function writeMessages(
-    playerName,
-    guildId,
-    guildName,
-    formattedDate,
-    memberIndex,
-    memberStatus,
-    offlineTime,
-    memberName,
-    hasChatPermission,
-    hasNotePermission,
-    hasMailPermission,
-    guildSettings )
-    if hasChatPermission and guildSettings.messageEnabled then
-        local guildIndex = GW.GetGuildIndex( guildId )
-        local chatFormat = GW.FormatMessage( guildSettings.noteBody, playerName, guildName, formattedDate )
-        if chatFormat and IsChatSystemAvailableForCurrentPlatform() and GW.ChatReady and memberIndex then
-            if db.generalSettings.offlinecheck == (memberStatus ~= PLAYER_STATUS_OFFLINE) and CanWriteGuildChannel( _G[ "CHAT_CHANNEL_GUILD_" .. guildIndex ] ) then
-                StartChatInput( chatFormat, _G[ "CHAT_CHANNEL_GUILD_" .. guildIndex ] )
-            elseif memberStatus == PLAYER_STATUS_OFFLINE then
-                chat( "|c%s %s|r |cffffffis offline", GW.COLOR, ZO_LinkHandler_CreateDisplayNameLink( playerName ) )
-            end
-        end
-    end
 
-    if hasNotePermission and guildSettings.noteEnabled then
-        local savedNote = GWData[ worldName ].guilds.savedNotes[ guildId ][ playerName ]
-        if not savedNote or savedNote == "" then
-            local noteFormat = GW.FormatMessage( guildSettings.noteBody, playerName, guildName, formattedDate )
-            if noteFormat and db.generalSettings.offlinemodecheck and offlineTime > 1209600 then -- 2 weeks
-                noteFormat = noteFormat .. "\n|cffffffOfflinemode|r"
-            end
-            if memberName == playerName then
-                GW.writeNote( guildId, memberIndex, noteFormat )
-            end
-        elseif memberName == playerName then
-            GW.writeNote( guildId, memberIndex, savedNote )
-        end
-    end
-
-    if hasMailPermission and guildSettings.mailEnabled then
-        local mailBody = GW.FormatMessage( guildSettings.mailBody, playerName, guildName, formattedDate )
-        local mailSubject = GW.FormatMessage( guildSettings.mailSubject, playerName, guildName, formattedDate )
-        if mailBody and memberName == playerName then
-            GW.writeMail( playerName, mailSubject, mailBody )
-        end
-    end
-end
 local isProcessing = false
 local function writeChatMessage(
     playerName,
