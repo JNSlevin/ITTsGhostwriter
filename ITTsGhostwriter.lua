@@ -14,11 +14,13 @@ local defaults = {
     generalSettings = {
         offlinecheck = true,
         offlinemodecheck = true,
-        backupButton = false
+        backupButton = false,
+        chatWindowButtonOffsetX = -40,
     },
     guilds = {},
     debugMode = false,
     firstload = true,
+
     selectedGuild = GetGuildId( 1 ),
     lastOpenedCategory = "",
     mailComboBoxLastSelectedItemIndex = 1,
