@@ -27,7 +27,7 @@ After you decided who does what, edit their notes! The pattern is specifically m
 #### List of patterns: 
 *  NOTE PATTERN =          `|cGWnote|r`
 *  MAIL PATTERN =          `|cGWmail|r`
-*  CHAT PATTERN =          `|cCWchat|r`
+*  CHAT PATTERN =          `|cGWchat|r`
 *  NOTE + MAIL PATTERN =   `|cGWnoma|r`
 *  NOTE + CHAT PATTERN =   `|cGWnoch|r`
 *  MAIL + CHAT PATTERN =   `|cGWmach|r`
