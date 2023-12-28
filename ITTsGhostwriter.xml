@@ -60,7 +60,7 @@
 					<Dimensions x="350" y="25" />
 					<Anchor point="TOP" relativeTo="$(parent)_Compose" relativePoint="TOP" offsetX="0" offsetY="-50" />
 					<Controls>
-						<EditBox name="$(parent)_Box" inherits="ZO_DefaultEditForBackdrop" multiLine="false" maxInputCharacters="30" defaultText="Type your title here...">
+						<EditBox name="$(parent)_Box" inherits="ZO_DefaultEditForBackdrop" multiLine="false" maxInputCharacters="MAIL_MAX_SUBJECT_CHARACTERS" defaultText="Type your title here...">
 							<Dimensions x="350" y="25" />
 							<Anchor point="CENTER" relativeTo="$(parent)" relativePoint="CENTER" />
 							<OnTab> GW_NotePad_ComposeScrollContainer_Box:TakeFocus()</OnTab>
@@ -87,6 +87,7 @@
 					<OnClicked>ITTsGhostwriter.TogglePreview()</OnClicked>
 
 				</Button>
+
 				<Control name="$(parent)_Buttons">
 					<Dimensions x="370" y="25" />
 					<Anchor point="TOP" relativeTo="$(parent)_NoteTitle" relativePoint="BOTTOM" offsetX="0" offsetY="-60" />
@@ -109,6 +110,10 @@
 						</Button>
 					</Controls>
 				</Control>
+				<Label name="$(parent)_Count" font="$(MEDIUM_FONT)|$(KB_20)|soft-shadow-thin" text="4" color="INTERFACE_COLOR_TYPE_TEXT_COLORS:INTERFACE_TEXT_COLOR_NORMAL">
+					<Anchor relativePoint="LEFT" relativeTo="$(parent)_Buttons_Button2" point="RIGHT" offsetY="2" />
+
+				</Label>
 				<Texture name="$(parent)_VerticalDivider" textureFile="/esoui/art/miscellaneous/centerscreen_topdivider.dds" layer="OVERLAY">
 					<Dimensions x="450" y="5" />
 					<Anchor point="RIGHT" relativeTo="$(parent)_ScrollBackdrop" relativePoint="RIGHT" offsetX="250" />
@@ -173,6 +178,57 @@
 				<Control name="$(parent)Save" inherits="ZO_CustomDialogButton" />
 			</Controls>
 		</TopLevelControl>
+		<!-- /esoui/art/tradinghouse/tradinghouse_trophy_scroll_down.dds -->
+		<Control name="ITTsSendMailExtension" hidden="true">
+			<Anchor point="CENTER" relativeTo="GuiRoot" relativePoint="CENTER" />
+			<Dimensions x="200" y="200" />
+			<OnInitialized>self:SetParent(ZO_MailSend)</OnInitialized>
+			<Controls>
+				<Texture name="$(parent)_BG" textureFile="/esoui/art/login/login_uiwindowbg_left.dds" layer="BACKGROUND">
+					<Anchor point="RIGHT" relativeTo="ZO_MailSend" relativePoint="LEFT" />
+					<Dimensions x="300" y="650" />
+				</Texture>
+				<Texture name="$(parent)_BG2" textureFile="/esoui/art/miscellaneous/centerscreen_indexarea_left.dds" layer="BACKGROUND">
+					<Anchor point="RIGHT" relativeTo="ZO_MailSend" relativePoint="LEFT" offsetY="25" />
+					<Dimensions x="300" y="900" />
+				</Texture>
+				<Control name="$(parent)_CategoryComboBox" inherits="ZO_ComboBox" layer="1">
+					<!-- <OnInitialized>self:SetParent(ZO_MailSend)</OnInitialized> -->
+					<Dimensions x="200" y="30" />
+					<Anchor point="TOPRIGHT" relativeTo="ZO_MailSendToField" relativePoint="TOPLEFT" offsetX="-15" offsetY="0" />
+				</Control>
+				<Control name="$(parent)_NoteEntries" inherits="ZO_ScrollContainer" layer="0">
+					<Anchor point="TOPRIGHT" relativeTo="ZO_MailSendSubjectField" relativePoint="TOPLEFT" offsetX="-10" />
+					<Dimensions x="200" y="375" />
+					<Controls>
+						<!-- <Backdrop name="$(parent)_BG" inherits="ZO_DefaultBackdrop">
+							<AnchorFill />
+						</Backdrop> -->
+					</Controls>
+				</Control>
+				<!-- <Control name="$(parent)_CategoryLabel" inherits="ZO_StatusIconHeader" layer="1">
+					<Dimensions x="200" y="30" />
+					<Anchor point="TOPLEFT" relativeTo="$(parent)_NoteEntries" relativePoint="TOPLEFT" offsetX="-40" offsetY="-50" />
+				</Control> -->
+			</Controls>
+		</Control>
+		<Button name="ITTsMailExtensionButton">
+			<OnInitialized>self:SetParent(ZO_MailSend)</OnInitialized>
+			<Dimensions x="32" y="32" />
+			<Anchor point="TOPLEFT" relativeTo="ZO_MailSend" relativePoint="TOPLEFT" offsetX="-10" offsetY="0" />
+			<Textures
+				pressed="/esoui/art/tradinghouse/tradinghouse_trophy_runebox_fragment_down.dds"
+				mouseOver="/esoui/art/tradinghouse/tradinghouse_trophy_runebox_fragment_over.dds"
+				normal="/esoui/art/tradinghouse/tradinghouse_trophy_runebox_fragment_up.dds" />
+			<OnClicked>ITTsGhostwriter.UI.OnMailButtonClicked(self)</OnClicked>
+		</Button>
+		<Label name="ITTsSendMailExtension_Entry" virtual="true" inherits="ZO_SelectableLabel">
+			<Dimensions x="200" y="20" />
+			<Anchor point="RIGHT" />
+			<OnInitialized> 
+				ZO_SelectableLabel_OnInitialized(self)
+             </OnInitialized>
+		</Label>
 
 		<!-- <Control name="ITTsChatWindowExtension" maybe one day>
 			<OnInitialized>self:SetParent(ZO_ChatWindow)</OnInitialized>

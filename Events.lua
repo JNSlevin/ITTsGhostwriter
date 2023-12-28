@@ -1,16 +1,16 @@
-local events = {}
-local GW = ITTsGhostwriter
+local events           = {}
+local GW               = ITTsGhostwriter
 ITTsGhostwriter.events = events
 
-local worldName = GetWorldName()
-local userDisplayName = GetDisplayName()
+local worldName        = GetWorldName()
+local userDisplayName  = GetDisplayName()
 local currentWorldName = GetWorldName()
 local db
-GW.combat = false
-GW.gameFocus = true
-GW.playerDead = false
-GW.InTributeMatch = false
-GW.isNormalGameScene = true
+GW.combat              = false
+GW.gameFocus           = true
+GW.playerDead          = false
+GW.InTributeMatch      = false
+GW.isNormalGameScene   = true
 local function chat( message, ... )
     GW.PrintChatMessage( message, ... )
 end
@@ -365,8 +365,11 @@ function events.Register()
                                     onPlayerReincarnated )
     EVENT_MANAGER:RegisterForEvent( GW.Name, EVENT_GAME_FOCUS_CHANGED,
                                     onGameFocusChanged )
-
+    local logger = GWLogger:New( "Events" )
     SCENE_MANAGER:RegisterCallback( "SceneStateChanged", sceneChange )
+    SCENE_MANAGER:RegisterCallback( "SceneStateChanged", function( name, old, new )
+        logger:Log( "SceneStateChanged: %s, %s, %s", name, old, new )
+    end )
     misc()
     readyToWelcome()
 end

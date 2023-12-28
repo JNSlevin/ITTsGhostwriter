@@ -1,10 +1,10 @@
 ITTsGhostwriter.CategoryManager = ZO_Object:Subclass()
-local CategoryManager = ITTsGhostwriter.CategoryManager
-ITTsGhostwriter.Category = CategoryManager:Subclass()
-local Category = ITTsGhostwriter.Category
-ITTsGhostwriter.Note = Category:Subclass()
-local Note = ITTsGhostwriter.Note
-local PROTECTED_CATEGORY = "Uncategorized"
+local CategoryManager           = ITTsGhostwriter.CategoryManager
+ITTsGhostwriter.Category        = CategoryManager:Subclass()
+local Category                  = ITTsGhostwriter.Category
+ITTsGhostwriter.Note            = Category:Subclass()
+local Note                      = ITTsGhostwriter.Note
+local PROTECTED_CATEGORY        = "Uncategorized"
 -- I am painfully aware that none of this is needed. I could have done this whole thing with 5 little functions
 -- But i wanted to learn so this addon is now the scapegoat for that
 local function refreshTree()
@@ -17,10 +17,10 @@ local logger = GWLogger:New( "CategoryManager" )
 
 
 function CategoryManager:New( ... )
-    local instance = ZO_Object.New( self )
+    local instance      = ZO_Object.New( self )
     instance.categories = {} -- Add a table to store categories
     --instance.db = db --!this used to somehow work but im scared so im not touching it
-    local args = { ... }
+    local args          = { ... }
     for i, arg in ipairs( args ) do
         instance[ "property" .. i ] = arg
     end
@@ -32,7 +32,7 @@ end
 -- Add category in tree loop, if it exists in db but not in tree, add it to tree
 -- if it doesnt exist in tree or db, add it to make a new one and save it to db
 function CategoryManager:AddCategory( categoryData, REFRESH_TREE )
-    local categoryName = categoryData.name
+    local categoryName     = categoryData.name
     local existingCategory = self.categories[ categoryName ]
     local existingDB
     local category
@@ -218,10 +218,10 @@ function CategoryManager:MoveNoteToCategory(
         return
     end
     local noteData = {
-        name = note.name,
-        content = note.content,
+        name         = note.name,
+        content      = note.content,
         categoryName = targetCategoryName,
-        treeNode = note.treeNode,
+        treeNode     = note.treeNode,
     }
 
     -- Add the note to the new category
@@ -496,8 +496,8 @@ function CategoryManager:SaveCategoryToDatabase( categoryName, categoryData )
                     categoryName )
         -- Update only specific fields and keep the rest of the data intact
         categoryInDb.iconIndex = categoryData.iconIndex
-        categoryInDb.name = categoryData.name
-        categoryInDb.priority = categoryData.priority
+        categoryInDb.name      = categoryData.name
+        categoryInDb.priority  = categoryData.priority
         if self.categories[ categoryName ] then
             self.categories[ categoryName ].iconIndex = categoryData
                 .iconIndex
@@ -618,13 +618,13 @@ function Category:New( name, iconIndex, priority, treeNode, manager )
     else
         logger:Log( 5, "Manager does not exist" )
     end
-    local instance = ZO_Object.New( self )
-    instance.name = name
-    instance.iconIndex = iconIndex
-    instance.priority = priority
-    instance.notes = {}
-    instance.treeNode = treeNode
-    instance.manager = manager
+    local instance             = ZO_Object.New( self )
+    instance.name              = name
+    instance.iconIndex         = iconIndex
+    instance.priority          = priority
+    instance.notes             = {}
+    instance.treeNode          = treeNode
+    instance.manager           = manager
 
     --instance.db = manager.db[ name ] --!this used to somehow work but im scared so im not touching it
 
@@ -721,6 +721,22 @@ function Category:DeleteNote( noteName )
     return true
 end
 
+function Category:GetAllNotes()
+    return self.notes
+end
+
+function Category:GetAllNoteNames()
+    local names = {}
+    logger:Log( 3, "Getting note names for category: %s", self.name )
+    for _, note in pairs( self.notes ) do
+        logger:Log( 3, "Note instance: %s", tostring( note ) )
+        logger:Log( 3, "Note name: %s", note.name )
+        table.insert( names, note.name )
+    end
+    logger:Log( 3, "Returning names: %s", table.concat( names, ", " ) )
+    return names
+end
+
 -- retrieve note by name
 function Category:GetNote( noteName )
     -- Check if the note exists
@@ -758,11 +774,11 @@ end
 -- retrieve data for current instance
 function Category:GetData()
     return {
-        name = self.name,
+        name      = self.name,
         iconIndex = self.iconIndex,
-        priority = self.priority,
-        treeNode = self.treeNode,
-        manager = self.manager,
+        priority  = self.priority,
+        treeNode  = self.treeNode,
+        manager   = self.manager,
     }
 end
 
@@ -787,13 +803,13 @@ function Note:New( name, content, categoryName, treeNode, categoryInstance )
         return nil
     end
 
-    local instance = ZO_Object.New( self )
-    instance.name = name
-    instance.content = content
-    instance.categoryName = categoryName
-    instance.treeNode = treeNode
-    instance.categoryInstance = categoryInstance
-
+    local instance                 = ZO_Object.New( self )
+    instance.name                  = name
+    instance.content               = content
+    instance.categoryName          = categoryName
+    instance.treeNode              = treeNode
+    instance.categoryInstance      = categoryInstance
+    categoryInstance.notes[ name ] = instance
     --instance.db = categoryInstance.db.entries--!this used to somehow work but im scared so im not touching it
     categoryInstance.notes[ name ] = instance
     logger:Log( 1, "Creating a new Note instance with name: " .. name )
@@ -826,10 +842,10 @@ end
 
 function Note:GetData()
     return {
-        name = self.name,
-        content = self.content,
-        categoryName = self.categoryName,
-        treeNode = self.treeNode,
+        name             = self.name,
+        content          = self.content,
+        categoryName     = self.categoryName,
+        treeNode         = self.treeNode,
         categoryInstance = self.categoryInstance,
     }
 end
@@ -913,10 +929,10 @@ local testDb = {
 local function testAddCategory()
     local manager = CategoryManager:New( testDb )
     local categoryData = {
-        name = "Test",
+        name      = "Test",
         iconIndex = 1,
-        priority = 1,
-        treeNode = {
+        priority  = 1,
+        treeNode  = {
         }
     }
 
@@ -942,20 +958,20 @@ end
 local function testUpdateCategory()
     local manager = CategoryManager:New( testDb )
     local categoryData = {
-        name = "Test",
+        name      = "Test",
         iconIndex = 1,
-        priority = 1,
-        treeNode = {
+        priority  = 1,
+        treeNode  = {
         }
     }
     manager:AddCategory( categoryData )
 
     -- Test updating a category
     local newCategoryData = {
-        name = "NewTest",
+        name      = "NewTest",
         iconIndex = 2,
-        priority = 2,
-        treeNode = {
+        priority  = 2,
+        treeNode  = {
         }
     }
     local result = manager:UpdateCategoryData( "Test", newCategoryData )
@@ -965,10 +981,10 @@ local function testUpdateCategory()
         testLogger:Log( 5, "UpdateCategory: Failed to update category" )
     end
     local newCategoryData2 = {
-        name = "Test",
+        name      = "Test",
         iconIndex = 2,
-        priority = 2,
-        treeNode = {
+        priority  = 2,
+        treeNode  = {
         }
     }
     local result2 = manager:UpdateCategoryData( "Test", newCategoryData2 )
@@ -992,17 +1008,17 @@ end
 local function testMergeCategories()
     local manager = CategoryManager:New( testDb )
     local categoryData1 = {
-        name = "Test1",
+        name      = "Test1",
         iconIndex = 1,
-        priority = 1,
-        treeNode = {
+        priority  = 1,
+        treeNode  = {
         }
     }
     local categoryData2 = {
-        name = "Test2",
+        name      = "Test2",
         iconIndex = 2,
-        priority = 2,
-        treeNode = {
+        priority  = 2,
+        treeNode  = {
         }
     }
     manager:AddCategory( categoryData1 )
@@ -1032,10 +1048,10 @@ end
 local function testDeleteCategory()
     local manager = CategoryManager:New( testDb )
     local categoryData = {
-        name = "Test",
+        name      = "Test",
         iconIndex = 1,
-        priority = 1,
-        treeNode = {
+        priority  = 1,
+        treeNode  = {
         }
     }
     manager:AddCategory( categoryData )
@@ -1060,11 +1076,11 @@ local function testDeleteCategory()
 end
 local testDb2 = {
     [ "Category1" ] = {
-        name = "Category1",
+        name      = "Category1",
         iconIndex = 1,
-        priority = 1,
-        treeNode = {},
-        entries = {
+        priority  = 1,
+        treeNode  = {},
+        entries   = {
             [ "test1" ] = "test",
             [ "test2" ] = "test",
             [ "test3" ] = "test",
@@ -1073,16 +1089,16 @@ local testDb2 = {
         }
     },
     [ "Category2" ] = {
-        name = "Category2",
+        name      = "Category2",
         iconIndex = 2,
-        priority = 2,
-        treeNode = {}
+        priority  = 2,
+        treeNode  = {}
     },
     [ "Category3" ] = {
-        name = "Category3",
+        name      = "Category3",
         iconIndex = 3,
-        priority = 3,
-        treeNode = {}
+        priority  = 3,
+        treeNode  = {}
     },
 }
 local function testClearEntries()

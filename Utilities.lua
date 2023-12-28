@@ -1,27 +1,27 @@
-local GW =
+local GW                         =
     ITTsGhostwriter or
     {
         name = "ITTsGhostwriter",
 
     }
-ITTsGhostwriter = GW
+ITTsGhostwriter                  = GW
 
-local chat = LibChatMessage( "ITTsGhostwriter", "GW" )
-local logger = GWLogger:New( "Utils" )
+local chat                       = LibChatMessage( "ITTsGhostwriter", "GW" )
+local logger                     = GWLogger:New( "Utils" )
 -----------
 --CONSTANTS
 -----------
 
-local NOTE_PATTERN = "|cGWnote|r"
-local MAIL_PATTERN = "|cGWmail|r"
-local CHAT_PATTERN = "|cGWchat|r"
-local NOTE_AND_MAIL_PATTERN = "|cGWnoma|r"
-local NOTE_AND_CHAT_PATTERN = "|cGWnoch|r"
-local MAIL_AND_CHAT_PATTERN = "|cGWmach|r"
+local NOTE_PATTERN               = "|cGWnote|r"
+local MAIL_PATTERN               = "|cGWmail|r"
+local CHAT_PATTERN               = "|cGWchat|r"
+local NOTE_AND_MAIL_PATTERN      = "|cGWnoma|r"
+local NOTE_AND_CHAT_PATTERN      = "|cGWnoch|r"
+local MAIL_AND_CHAT_PATTERN      = "|cGWmach|r"
 local NOTE_MAIL_AND_CHAT_PATTERN = "|cGWxxxx|r"
 --* LibGuildRoster needs one guildId to filter, if its nil it will show in all guilds, so the dummy guildId is added with a number that will most likely never be used by an actual guild
-GW.GuildsWithPermisson = { 999999999999999 }
-GW.shouldHideFor = {}
+GW.GuildsWithPermisson           = { 999999999999999 }
+GW.shouldHideFor                 = {}
 --------------------
 --helper functions--
 --------------------
