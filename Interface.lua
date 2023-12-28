@@ -1255,11 +1255,19 @@ function ITTsGW_IconHeader_Setup(
                          updateSizeFunction )
 end
 
+function UI.UpdateShowUIButton()
+    local button = GetControl( "ITTsGW_ShowNoteBookButton" )
+    local offsetX = db.settings.generalSettings.chatWindowButtonOffsetX or -40
+    button:ClearAnchors()
+    button:SetAnchor( TOPRIGHT, ZO_ChatWindow, TOPRIGHT, offsetX, 7 )
+end
+
 local function createShowUIButton()
     local button = WINDOW_MANAGER:CreateControl( "ITTsGW_ShowNoteBookButton",
                                                  ZO_ChatWindow, CT_BUTTON )
+    local offsetX = db.settings.generalSettings.chatWindowButtonOffsetX or -40
     button:SetDimensions( 32, 32 )
-    button:SetAnchor( TOPRIGHT, ZO_ChatWindow, TOPRIGHT, -40, 7 )
+    button:SetAnchor( TOPRIGHT, ZO_ChatWindow, TOPRIGHT, offsetX, 7 )
 
     --[[  button:SetNormalTexture( "/esoui/art/tradinghouse/tradinghouse_racial_style_motif_book_up.dds" )
     button:SetPressedTexture( "/esoui/art/tradinghouse/tradinghouse_racial_style_motif_book_down.dds" )

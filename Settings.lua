@@ -181,6 +181,21 @@ local function createSettingsWindow()
         end
     }
     optionsData[ #optionsData + 1 ] = {
+        type = "slider",
+        name = "Chat window notepad button position",
+        getFunc = function() return st.generalSettings.chatWindowButtonOffsetX end,
+        setFunc = function( value )
+            st.generalSettings.chatWindowButtonOffsetX = value
+            ITTsGhostwriter.UI.UpdateShowUIButton()
+        end,
+        tooltip = "The lower the value the more to the left the button will be",
+        min = -350,
+        max = -40,
+
+        step = 10,
+        width = "full"
+    }
+    optionsData[ #optionsData + 1 ] = {
         type = "submenu",
         name = "Guild Settings",
         icon = "/esoui/art/tutorial/guildhistory_indexicon_guild_up.dds",

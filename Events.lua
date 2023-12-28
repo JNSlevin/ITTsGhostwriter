@@ -94,21 +94,20 @@ end
 local async = LibAsync
 local task = async:Create( "ITTsGhostwriter/WelcomeTask" )
 
-local function writeMessages(
+
+local isProcessing = false
+local function writeChatMessage(
     playerName,
     guildId,
     guildName,
     formattedDate,
     memberIndex,
     memberStatus,
-    offlineTime,
-    memberName,
     hasChatPermission,
-    hasNotePermission,
-    hasMailPermission,
     guildSettings )
     if hasChatPermission and guildSettings.messageEnabled then
-        local chatFormat = GW.FormatMessage( guildSettings.noteBody, playerName, guildName, formattedDate )
+        local guildIndex = GW.GetGuildIndex( guildId )
+        local chatFormat = GW.FormatMessage( guildSettings.messageBody, playerName, guildName, formattedDate )
         if chatFormat and IsChatSystemAvailableForCurrentPlatform() and GW.ChatReady and memberIndex then
             if db.generalSettings.offlinecheck == (memberStatus ~= PLAYER_STATUS_OFFLINE) and CanWriteGuildChannel( _G[ "CHAT_CHANNEL_GUILD_" .. guildIndex ] ) then
                 StartChatInput( chatFormat, _G[ "CHAT_CHANNEL_GUILD_" .. guildIndex ] )
@@ -117,7 +116,18 @@ local function writeMessages(
             end
         end
     end
+end
 
+local function writeNote(
+    playerName,
+    guildId,
+    guildName,
+    formattedDate,
+    memberIndex,
+    offlineTime,
+    memberName,
+    hasNotePermission,
+    guildSettings )
     if hasNotePermission and guildSettings.noteEnabled then
         local savedNote = GWData[ worldName ].guilds.savedNotes[ guildId ][ playerName ]
         if not savedNote or savedNote == "" then
@@ -132,7 +142,16 @@ local function writeMessages(
             GW.writeNote( guildId, memberIndex, savedNote )
         end
     end
+end
 
+local function writeMail(
+    playerName,
+    guildId,
+    guildName,
+    formattedDate,
+    memberName,
+    hasMailPermission,
+    guildSettings )
     if hasMailPermission and guildSettings.mailEnabled then
         local mailBody = GW.FormatMessage( guildSettings.mailBody, playerName, guildName, formattedDate )
         local mailSubject = GW.FormatMessage( guildSettings.mailSubject, playerName, guildName, formattedDate )
@@ -141,8 +160,6 @@ local function writeMessages(
         end
     end
 end
-local isProcessing = false
-
 
 local numberOfTasks = 0
 local function onMemberJoin( _, guildId, playerName )
@@ -158,9 +175,7 @@ local function onMemberJoin( _, guildId, playerName )
     local hasChatPermission = GW.GetPermission_Chat( guildId )
     local hasNotePermission = GW.GetPermission_Note( guildId )
     local hasMailPermission = GW.GetPermission_Mail( guildId )
-    df( "hasChatPermission: %s, hasNotePermission: %s, hasMailPermission: %s",
-        tostring( hasChatPermission ), tostring( hasNotePermission ),
-        tostring( hasMailPermission ) )
+
     if not (hasChatPermission or hasNotePermission or hasMailPermission) then
         return
     elseif IsUnitInCombat( "player" ) then
@@ -177,14 +192,21 @@ local function onMemberJoin( _, guildId, playerName )
             "|cffffffWelcome sequence queued, waiting for game to gain focus..." )
     end
     numberOfTasks = numberOfTasks + 1
-
+    writeChatMessage( playerName, guildId, guildName, formattedDate,
+                      memberIndex, memberStatus, hasChatPermission,
+                      guildSettings )
     task:WaitUntil( function()
         return readyToWelcome() and not isProcessing
     end )
         :Then( function()
             isProcessing = true
-            writeMessages( playerName, guildId, guildName, formattedDate, memberIndex, memberStatus, offlineTime, memberName,
-                           hasChatPermission, hasNotePermission, hasMailPermission, guildSettings )
+            writeNote( playerName, guildId, guildName, formattedDate,
+                       memberIndex, offlineTime, memberName,
+                       hasNotePermission, guildSettings )
+
+            writeMail( playerName, guildId, guildName, formattedDate, memberName,
+                       hasMailPermission, guildSettings )
+
             zo_callLater( function()
                               isProcessing = false
                               numberOfTasks = numberOfTasks - 1
@@ -367,9 +389,7 @@ function events.Register()
                                     onGameFocusChanged )
     local logger = GWLogger:New( "Events" )
     SCENE_MANAGER:RegisterCallback( "SceneStateChanged", sceneChange )
-    SCENE_MANAGER:RegisterCallback( "SceneStateChanged", function( name, old, new )
-        logger:Log( "SceneStateChanged: %s, %s, %s", name, old, new )
-    end )
+
     misc()
     readyToWelcome()
 end
