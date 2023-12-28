@@ -2,7 +2,7 @@ local GW =
     ITTsGhostwriter or
     {
         name = "ITTsGhostwriter",
-        version = "2.1.0",
+        version = "2.2.0",
         variableVersion = 194,
         COLOR = "1590B2"
     }
