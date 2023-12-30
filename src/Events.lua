@@ -6,9 +6,9 @@ local worldName        = GetWorldName()
 local userDisplayName  = GetDisplayName()
 local currentWorldName = GetWorldName()
 local db
-GW.combat              = false
-GW.gameFocus           = true
-GW.playerDead          = false
+GW.combat              = IsUnitInCombat( "player" )
+GW.gameFocus           = DoesGameHaveFocus()
+GW.playerDead          = IsUnitDeadOrReincarnating( "player" )
 GW.InTributeMatch      = false
 GW.isNormalGameScene   = true
 local function chat( message, ... )
@@ -54,7 +54,12 @@ local function getJoinDate( guildId, playerName )
                     if ITTsRosterBotData[ worldName ].guilds[ guildId ] then
                         if ITTsRosterBotData[ worldName ].guilds[ guildId ].join_records then
                             if ITTsRosterBotData[ worldName ].guilds[ guildId ].join_records[ playerName ] then
-                                if ITTsRosterBotData[ worldName ].guilds[ guildId ].join_records[ playerName ].first then
+                                if ITTsRosterBotData[ worldName ].guilds[ guildId ].join_records[ playerName ].import then
+                                    timeStamp = ITTsRosterBotData
+                                        [ worldName ].guilds[ guildId ]
+                                        .join_records
+                                        [ playerName ].import
+                                elseif ITTsRosterBotData[ worldName ].guilds[ guildId ].join_records[ playerName ].first then
                                     timeStamp = ITTsRosterBotData
                                         [ worldName ].guilds[ guildId ]
                                         .join_records
@@ -163,18 +168,21 @@ end
 
 local numberOfTasks = 0
 local function onMemberJoin( _, guildId, playerName )
-    local guildSettings = db.guilds[ guildId ].settings
-    local guildName = GetGuildName( guildId )
-    local formattedDate = getJoinDate( guildId, playerName )
-    local memberIndex = GetGuildMemberIndexFromDisplayName( guildId,
-                                                            playerName )
+    local guildSettings                               = db.guilds[ guildId ].settings
+    local guildName                                   = GetGuildName( guildId )
+    local formattedDate                               = getJoinDate( guildId, playerName )
+    local memberIndex                                 = GetGuildMemberIndexFromDisplayName( guildId,
+                                                                                            playerName )
     local memberName, _, _, memberStatus, offlineTime = GetGuildMemberInfo(
         guildId, memberIndex )
-    local guildIndex = GW.GetGuildIndex( guildId )
+    local guildIndex                                  = GW.GetGuildIndex( guildId )
 
-    local hasChatPermission = GW.GetPermission_Chat( guildId )
-    local hasNotePermission = GW.GetPermission_Note( guildId )
-    local hasMailPermission = GW.GetPermission_Mail( guildId )
+    local hasChatPermission                           = GW.GetPermission_Chat( guildId )
+    local hasNotePermission                           = GW.GetPermission_Note( guildId )
+    local hasMailPermission                           = GW.GetPermission_Mail( guildId )
+    if not GW.combat then GW.Combat = IsUnitInCombat( "player" ) == false end
+    if not GW.gameFocus then GW.gameFocus = DoesGameHaveFocus() end
+    if not GW.playerDead then GW.playerDead = IsUnitDeadOrReincarnating( "player" ) end
 
     if not (hasChatPermission or hasNotePermission or hasMailPermission) then
         return
@@ -371,6 +379,7 @@ end
 -----------
 function events.Register()
     db = ITTsGhostwriter.Vars
+
     EVENT_MANAGER:RegisterForEvent( GW.name, EVENT_GUILD_MEMBER_NOTE_CHANGED,
                                     noteAlert )
     EVENT_MANAGER:RegisterForEvent( GW.name,
@@ -387,6 +396,7 @@ function events.Register()
                                     onPlayerReincarnated )
     EVENT_MANAGER:RegisterForEvent( GW.Name, EVENT_GAME_FOCUS_CHANGED,
                                     onGameFocusChanged )
+
     local logger = GWLogger:New( "Events" )
     SCENE_MANAGER:RegisterCallback( "SceneStateChanged", sceneChange )
 

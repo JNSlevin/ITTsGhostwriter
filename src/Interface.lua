@@ -1277,8 +1277,11 @@ local function createShowUIButton()
     button:SetPressedTexture( "/esoui/art/treeicons/achievements_indexicon_prologue_down.dds" )
     button:SetMouseOverTexture( "/esoui/art/treeicons/achievements_indexicon_prologue_over.dds" )
     button:SetHandler( "OnClicked", function()
-        GW_NotePad:ToggleHidden()
+        UI.ToggleUI()
     end )
+end
+function UI.ToggleUI()
+    GW_NotePad:ToggleHidden()
 end
 
 local function createGlow()
