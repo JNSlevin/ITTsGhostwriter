@@ -1,16 +1,16 @@
-local events           = {}
-local GW               = ITTsGhostwriter
+local events = {}
+local GW = ITTsGhostwriter
 ITTsGhostwriter.events = events
-
-local worldName        = GetWorldName()
-local userDisplayName  = GetDisplayName()
+local async = LibAsync
+local worldName = GetWorldName()
+local userDisplayName = GetDisplayName()
 local currentWorldName = GetWorldName()
 local db
-GW.combat              = IsUnitInCombat( "player" )
-GW.gameFocus           = DoesGameHaveFocus()
-GW.playerDead          = IsUnitDeadOrReincarnating( "player" )
-GW.InTributeMatch      = false
-GW.isNormalGameScene   = true
+GW.combat = IsUnitInCombat( "player" )
+GW.gameFocus = DoesGameHaveFocus()
+GW.playerDead = IsUnitDeadOrReincarnating( "player" )
+GW.InTributeMatch = false
+GW.isNormalGameScene = true
 local function chat( message, ... )
     GW.PrintChatMessage( message, ... )
 end
@@ -24,7 +24,7 @@ end
 local function readyToWelcome()
     return
         not GW.combat
-        and GW.gameFocus
+        -- and GW.gameFocus
         and not GW.playerDead
         and not GW.InTributeMatch
     --and GW.isNormalGameScene
@@ -96,9 +96,9 @@ local function getJoinDate( guildId, playerName )
     end
     return os.date( format, timeStamp )
 end
-local async = LibAsync
-local task = async:Create( "ITTsGhostwriter/WelcomeTask" )
 
+local task = async:Create( "ITTsGhostwriter/WelcomeTask" )
+local chatTask = async:Create( "ITTsGhostwriter/ChatTask" )
 
 local isProcessing = false
 local function writeChatMessage(
@@ -113,6 +113,7 @@ local function writeChatMessage(
     if hasChatPermission and guildSettings.messageEnabled then
         local guildIndex = GW.GetGuildIndex( guildId )
         local chatFormat = GW.FormatMessage( guildSettings.messageBody, playerName, guildName, formattedDate )
+
         if chatFormat and IsChatSystemAvailableForCurrentPlatform() and GW.ChatReady and memberIndex then
             if db.generalSettings.offlinecheck == (memberStatus ~= PLAYER_STATUS_OFFLINE) and CanWriteGuildChannel( _G[ "CHAT_CHANNEL_GUILD_" .. guildIndex ] ) then
                 StartChatInput( chatFormat, _G[ "CHAT_CHANNEL_GUILD_" .. guildIndex ] )
@@ -168,18 +169,18 @@ end
 
 local numberOfTasks = 0
 local function onMemberJoin( _, guildId, playerName )
-    local guildSettings                               = db.guilds[ guildId ].settings
-    local guildName                                   = GetGuildName( guildId )
-    local formattedDate                               = getJoinDate( guildId, playerName )
-    local memberIndex                                 = GetGuildMemberIndexFromDisplayName( guildId,
-                                                                                            playerName )
+    local guildSettings = db.guilds[ guildId ].settings
+    local guildName = GetGuildName( guildId )
+    local formattedDate = getJoinDate( guildId, playerName )
+    local memberIndex = GetGuildMemberIndexFromDisplayName( guildId,
+        playerName )
     local memberName, _, _, memberStatus, offlineTime = GetGuildMemberInfo(
         guildId, memberIndex )
-    local guildIndex                                  = GW.GetGuildIndex( guildId )
+    local guildIndex = GW.GetGuildIndex( guildId )
 
-    local hasChatPermission                           = GW.GetPermission_Chat( guildId )
-    local hasNotePermission                           = GW.GetPermission_Note( guildId )
-    local hasMailPermission                           = GW.GetPermission_Mail( guildId )
+    local hasChatPermission = GW.GetPermission_Chat( guildId )
+    local hasNotePermission = GW.GetPermission_Note( guildId )
+    local hasMailPermission = GW.GetPermission_Mail( guildId )
     if not GW.combat then GW.Combat = IsUnitInCombat( "player" ) == false end
     if not GW.gameFocus then GW.gameFocus = DoesGameHaveFocus() end
     if not GW.playerDead then GW.playerDead = IsUnitDeadOrReincarnating( "player" ) end
@@ -200,28 +201,32 @@ local function onMemberJoin( _, guildId, playerName )
             "|cffffffWelcome sequence queued, waiting for game to gain focus..." )
     end
     numberOfTasks = numberOfTasks + 1
-    writeChatMessage( playerName, guildId, guildName, formattedDate,
-                      memberIndex, memberStatus, hasChatPermission,
-                      guildSettings )
+    chatTask:WaitUntil( function()
+        return GW.gameFocus
+    end ):Then( function()
+        writeChatMessage( playerName, guildId, guildName, formattedDate,
+            memberIndex, memberStatus, hasChatPermission,
+            guildSettings )
+    end )
+
     task:WaitUntil( function()
         return readyToWelcome() and not isProcessing
     end )
         :Then( function()
             isProcessing = true
             writeNote( playerName, guildId, guildName, formattedDate,
-                       memberIndex, offlineTime, memberName,
-                       hasNotePermission, guildSettings )
+                memberIndex, offlineTime, memberName,
+                hasNotePermission, guildSettings )
 
             writeMail( playerName, guildId, guildName, formattedDate, memberName,
-                       hasMailPermission, guildSettings )
+                hasMailPermission, guildSettings )
 
             zo_callLater( function()
-                              isProcessing = false
-                              numberOfTasks = numberOfTasks - 1
-                          end, 10000 )
+                isProcessing = false
+                numberOfTasks = numberOfTasks - 1
+            end, 10000 )
         end )
 end
-
 
 events.OnMemberJoin = onMemberJoin
 
@@ -238,9 +243,9 @@ local function noteAlert( _, guildId, playerName, note )
 
 
     chat( "|cffffffMember note updated for |c%s%s|r |cffffffin %s",
-          GW.COLOR,
-          ZO_LinkHandler_CreateDisplayNameLink( playerName ),
-          GW.CreateGuildLink( guildId ) )
+        GW.COLOR,
+        ZO_LinkHandler_CreateDisplayNameLink( playerName ),
+        GW.CreateGuildLink( guildId ) )
 
     if guildSettings.autobackup then
         GWData[ currentWorldName ].guilds.savedNotes[ guildId ][ playerName ] =
@@ -259,15 +264,15 @@ local function applicationMessage(
     local baseMessage =
     "|cffffffYou have |c%s%d|r |cffffffopen Application(s) in %s \n|cffffff(|c%s%d|r |cffffffempty"
     local message = string.format( baseMessage, GW.COLOR, numApplications,
-                                   guildName, GW.COLOR, numEmptyApplications )
+        guildName, GW.COLOR, numEmptyApplications )
 
     if achievementThreshold > 1 then
         local achievementMessage =
         ", |c%s%d|r |cffffffover |c%s%s|r |cffffff Achievement Points"
         message = message ..
             string.format( achievementMessage, GW.COLOR,
-                           numAchievementThreshold, GW.COLOR,
-                           ZO_CommaDelimitNumber( achievementThreshold ) )
+                numAchievementThreshold, GW.COLOR,
+                ZO_CommaDelimitNumber( achievementThreshold ) )
     end
 
     if applicationThreshold > 1 then
@@ -275,7 +280,7 @@ local function applicationMessage(
         ", |c%s%d|r |cffffffover |c%s%d|r |cffffffCP"
         message = message ..
             string.format( thresHoldmessage, GW.COLOR, numOverThreshold,
-                           GW.COLOR, applicationThreshold )
+                GW.COLOR, applicationThreshold )
     end
 
     message = message .. ")"
@@ -326,11 +331,11 @@ local function applicationAlert( _, guildId, numApplications )
     end
     if db.guilds[ guildId ].settings.applicationAlert and numApplications ~= 0 then
         local message = applicationMessage( numApplications,
-                                            numEmptyApplications,
-                                            numAchievementThreshold,
-                                            numOverThreshold,
-                                            guildName, achievementThreshold,
-                                            applicationThreshold )
+            numEmptyApplications,
+            numAchievementThreshold,
+            numOverThreshold,
+            guildName, achievementThreshold,
+            applicationThreshold )
         chat( message )
     end
 end
@@ -381,21 +386,21 @@ function events.Register()
     db = ITTsGhostwriter.Vars
 
     EVENT_MANAGER:RegisterForEvent( GW.name, EVENT_GUILD_MEMBER_NOTE_CHANGED,
-                                    noteAlert )
+        noteAlert )
     EVENT_MANAGER:RegisterForEvent( GW.name,
-                                    EVENT_GUILD_FINDER_GUILD_NEW_APPLICATIONS, applicationAlert )
+        EVENT_GUILD_FINDER_GUILD_NEW_APPLICATIONS, applicationAlert )
     EVENT_MANAGER:RegisterForEvent( GW.name, EVENT_GUILD_MEMBER_ADDED,
-                                    onMemberJoin )
+        onMemberJoin )
     EVENT_MANAGER:RegisterForEvent( GW.name,
-                                    EVENT_TRIBUTE_GAME_FLOW_STATE_CHANGE, tributeMatchCheck )
+        EVENT_TRIBUTE_GAME_FLOW_STATE_CHANGE, tributeMatchCheck )
     EVENT_MANAGER:RegisterForEvent( GW.Name, EVENT_PLAYER_COMBAT_STATE,
-                                    combatCheck )
+        combatCheck )
     EVENT_MANAGER:RegisterForEvent( GW.Name, EVENT_PLAYER_DEAD,
-                                    onPlayerDeath )
+        onPlayerDeath )
     EVENT_MANAGER:RegisterForEvent( GW.Name, EVENT_PLAYER_REINCARNATED,
-                                    onPlayerReincarnated )
+        onPlayerReincarnated )
     EVENT_MANAGER:RegisterForEvent( GW.Name, EVENT_GAME_FOCUS_CHANGED,
-                                    onGameFocusChanged )
+        onGameFocusChanged )
 
     local logger = GWLogger:New( "Events" )
     SCENE_MANAGER:RegisterCallback( "SceneStateChanged", sceneChange )
