@@ -1,6 +1,6 @@
 ## Title: ITTs |c04B4AEGhostwriter
 ## Author: |c268074JN_Slevin|r
-## Version: 2.2.1
+## Version: 2.2.2
 ## AddOnVersion: 221
 ## Description: Keeps on top of newcomers, woosh! Part of the ITTs Bot family, handy helpers for Trade Guilds.
 ## APIVersion: 101040

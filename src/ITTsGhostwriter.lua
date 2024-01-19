@@ -2,7 +2,7 @@ local GW =
     ITTsGhostwriter or
     {
         name = "ITTsGhostwriter",
-        version = "2.2.1",
+        version = "2.2.2",
         variableVersion = 194,
         COLOR = "1590B2"
     }
@@ -177,9 +177,9 @@ end
 
 function GW.InitializeVariables()
     ITTsGhostwriter.Vars = ZO_SavedVars:NewAccountWide( "GWSettings",
-                                                        GW.variableVersion,
-                                                        nil, defaults,
-                                                        GetWorldName() )
+        GW.variableVersion,
+        nil, defaults,
+        GetWorldName() )
     ITTsGhostwriter.Vars.debugMode = false
     for _, instance in ipairs( GWLogger.instances ) do
         instance:UpdateEnabledState()
@@ -214,6 +214,6 @@ end
 ----------
 
 EVENT_MANAGER:RegisterForEvent( GW.name, EVENT_ADD_ON_LOADED,
-                                ITTsGhostwriter.OnAddOnLoaded )
+    ITTsGhostwriter.OnAddOnLoaded )
 EVENT_MANAGER:RegisterForEvent( GW.name, EVENT_PLAYER_ACTIVATED,
-                                OnPlayerActivated )
+    OnPlayerActivated )
