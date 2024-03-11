@@ -45,56 +45,25 @@ end
 local function getJoinDate( guildId, playerName )
     local format = db.guilds[ guildId ].settings.dateFormat
     local timeStamp = GetTimeStamp()
-    local general = GUILD_HISTORY_GENERAL
-    local guildEvents = GetNumGuildEvents( guildId, general )
-    if ITTsRosterBot then --!pain, need to make a RB function to return the join date
-        if ITTsRosterBotData then
-            if ITTsRosterBotData[ worldName ] then
-                if ITTsRosterBotData[ worldName ].guilds then
-                    if ITTsRosterBotData[ worldName ].guilds[ guildId ] then
-                        if ITTsRosterBotData[ worldName ].guilds[ guildId ].join_records then
-                            if ITTsRosterBotData[ worldName ].guilds[ guildId ].join_records[ playerName ] then
-                                if ITTsRosterBotData[ worldName ].guilds[ guildId ].join_records[ playerName ].import then
-                                    timeStamp = ITTsRosterBotData
-                                        [ worldName ].guilds[ guildId ]
-                                        .join_records
-                                        [ playerName ].import
-                                elseif ITTsRosterBotData[ worldName ].guilds[ guildId ].join_records[ playerName ].first then
-                                    timeStamp = ITTsRosterBotData
-                                        [ worldName ].guilds[ guildId ]
-                                        .join_records
-                                        [ playerName ].first
-                                elseif ITTsRosterBotData[ worldName ].guilds[ guildId ].join_records[ playerName ].last then
-                                    timeStamp = ITTsRosterBotData
-                                        [ worldName ].guilds[ guildId ]
-                                        .join_records
-                                        [ playerName ].last
-                                else
-                                    timeStamp = ITTsRosterBotData
-                                        [ worldName ].guilds[ guildId ]
-                                        .join_records
-                                        [ playerName ]
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-        end
+    if ITTsRosterBot then
+        local eventTime = ITTsRosterBot.Utils:GetJoinDate( guildId, playerName )
+        return os.date( format, eventTime )
     end
+
+    local guildEvents = GetNumGuildHistoryEvents( guildId, GUILD_HISTORY_EVENT_CATEGORY_ROSTER )
 
     if not timeStamp then
         for i = 1, guildEvents do
-            local eventType, secsSinceEvent, joinerDisplayName, inviter =
-                GetGuildEventInfo( guildId, general, i )
+            local eventId, eventTimeStamp, eventType, displayName =
+                GetGuildHistoryRosterEventInfo( guildId, i )
+            local secsSinceEvent = GetDiffBetweenTimeStamps( eventTimeStamp, timeStamp )
 
-            if eventType == GUILD_EVENT_GUILD_JOIN and joinerDisplayName == playerName and secsSinceEvent > 0 then
-                timeStamp = timeStamp - secsSinceEvent
-                break
+            if eventType == GUILD_EVENT_GUILD_JOIN and displayName == playerName and secsSinceEvent > 0 then
+                timeStamp = eventTimeStamp
+                return os.date( format, timeStamp )
             end
         end
     end
-    return os.date( format, timeStamp )
 end
 
 local task = async:Create( "ITTsGhostwriter/WelcomeTask" )
